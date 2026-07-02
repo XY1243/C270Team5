@@ -1,0 +1,157 @@
+### Manual verification script — VS Code "REST Client" extension.
+### Run requests top to bottom. Update the @token variables from each response as you go
+### (or use the extension's {{request.response.body.$.data.token}} chaining if preferred).
+
+@baseUrl = http://localhost:3000/api
+
+### 1a. Signup an organiser
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Olivia Organiser",
+  "email": "olivia@example.com",
+  "password": "Password123!",
+  "role": "organiser"
+}
+
+### 1b. Signup a regular user
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Uma User",
+  "email": "uma@example.com",
+  "password": "Password123!"
+}
+
+### 1c. Login as seeded admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Password123!"
+}
+
+### --- paste tokens from the responses above into these variables ---
+@organiserToken = PASTE_ORGANISER_TOKEN
+@userToken = PASTE_USER_TOKEN
+@adminToken = PASTE_ADMIN_TOKEN
+
+### 2a. Create event as organiser (expect status: "pending")
+POST {{baseUrl}}/events
+Content-Type: application/json
+Authorization: Bearer {{organiserToken}}
+
+{
+  "title": "Verification Test Event",
+  "description": "Created during manual verification",
+  "category": "tech",
+  "venueName": "Test Hall",
+  "lat": 1.2936,
+  "lng": 103.8580,
+  "startsAt": "2026-08-01T18:00:00",
+  "endsAt": "2026-08-01T20:00:00",
+  "capacity": 2
+}
+
+### 2b. Attempt to create event as plain user (expect 403)
+POST {{baseUrl}}/events
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "title": "Should Fail",
+  "startsAt": "2026-08-01T18:00:00",
+  "capacity": 10
+}
+
+### --- paste the new event's id from 2a's response ---
+@eventId = PASTE_EVENT_ID
+
+### 3a. Admin lists pending events
+GET {{baseUrl}}/admin/events/pending
+Authorization: Bearer {{adminToken}}
+
+### 3b. Admin approves the event
+PATCH {{baseUrl}}/admin/events/{{eventId}}/approve
+Authorization: Bearer {{adminToken}}
+
+### 3c. Public list now shows the approved event (pending ones excluded)
+GET {{baseUrl}}/events
+
+### 4. Map bounding box covering the event's lat/lng
+GET {{baseUrl}}/map/events?minLat=1.29&maxLat=1.30&minLng=103.85&maxLng=103.87
+
+### 5a. Check availability
+GET {{baseUrl}}/events/{{eventId}}/availability
+
+### 5b. RSVP as user
+POST {{baseUrl}}/rsvps
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "eventId": {{eventId}},
+  "ticketCount": 1
+}
+
+### 5c. Repeat RSVP for same user/event (expect 409 ALREADY_RSVPD)
+POST {{baseUrl}}/rsvps
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "eventId": {{eventId}},
+  "ticketCount": 1
+}
+
+### 6. Concurrency smoke test: run this same request several times in parallel
+### (e.g. via `autocannon`/a script hitting POST /api/rsvps with different user tokens)
+### against an event with capacity smaller than total requested tickets.
+### Confirm total confirmed ticket_count never exceeds capacity and excess requests get 409.
+
+### 7a. User dashboard (expect the RSVP listed)
+GET {{baseUrl}}/users/dashboard
+Authorization: Bearer {{userToken}}
+
+### 7b. Organiser rsvp-count (counts should match)
+GET {{baseUrl}}/events/{{eventId}}/rsvp-count
+Authorization: Bearer {{organiserToken}}
+
+### 8a. Admin analytics
+GET {{baseUrl}}/admin/analytics
+Authorization: Bearer {{adminToken}}
+
+### --- paste the user's id (from signup/login response) ---
+@userId = PASTE_USER_ID
+
+### 8b. Admin suspends the user
+PATCH {{baseUrl}}/admin/users/{{userId}}/suspend
+Authorization: Bearer {{adminToken}}
+
+### 8c. Attempt login as suspended user (expect 403 ACCOUNT_SUSPENDED)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "uma@example.com",
+  "password": "Password123!"
+}
+
+### 9. Upload event banner as organiser (multipart) — use the REST Client's file picker
+### or swap this for a curl command:
+### curl -X POST {{baseUrl}}/events/{{eventId}}/banner \
+###   -H "Authorization: Bearer <organiserToken>" \
+###   -F "banner=@/path/to/image.jpg"
+POST {{baseUrl}}/events/{{eventId}}/banner
+Authorization: Bearer {{organiserToken}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="banner"; filename="test-banner.jpg"
+Content-Type: image/jpeg
+
+< ./test-banner.jpg
+--boundary--

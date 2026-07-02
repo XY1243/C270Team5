@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title><%= title %> - Map View</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="/map"><%= title %></a>
+    <div class="links" id="authLinks"></div>
+  </div>
+
+  <form class="search-bar" id="searchForm">
+    <input type="text" id="searchInput" placeholder="Filter events on map by title or venue..." />
+    <button type="submit" class="btn">Search</button>
+  </form>
+
+  <div id="map"></div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    Auth.renderTopbarLinks(document.getElementById('authLinks'));
+
+    // App is Singapore-based; center on Singapore so seeded pins are visible on load.
+    const map = L.map('map').setView([1.3037, 103.8370], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    let markers = [];
+    let currentEvents = [];
+
+    function formatDate(iso) {
+      return new Date(iso).toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+    }
+
+    function clearMarkers() {
+      markers.forEach((m) => map.removeLayer(m));
+      markers = [];
+    }
+
+    function popupHtml(event) {
+      return `
+        <div class="popup-content" data-event-id="${event.id}">
+          <h3>${event.title}</h3>
+          <div class="meta">${event.category || ''} &middot; ${event.venue_name || ''}</div>
+          <div class="meta">${formatDate(event.starts_at)}</div>
+          <div class="capacity" data-role="capacity">Checking availability&hellip;</div>
+          <div class="actions">
+            <button class="btn" data-role="book" disabled>Book Now</button>
+            <a href="/events/${event.id}">View Details</a>
+          </div>
+        </div>
+      `;
+    }
+
+    async function checkAvailability(eventId, popupEl) {
+      const capacityEl = popupEl.querySelector('[data-role="capacity"]');
+      const bookBtn = popupEl.querySelector('[data-role="book"]');
+      try {
+        const res = await fetch(`/api/events/${eventId}/availability`);
+        const json = await res.json();
+        if (!json.success) {
+          capacityEl.textContent = json.error.message;
+          return;
+        }
+        const { remainingCapacity, capacity } = json.data;
+        if (remainingCapacity > 0) {
+          capacityEl.textContent = `${remainingCapacity} / ${capacity} spots left`;
+          capacityEl.className = 'capacity available';
+          bookBtn.disabled = false;
+        } else {
+          capacityEl.textContent = 'Sold out';
+          capacityEl.className = 'capacity sold-out';
+          bookBtn.disabled = true;
+        }
+      } catch (err) {
+        capacityEl.textContent = 'Could not check availability';
+      }
+    }
+
+    async function bookEvent(eventId, popupEl) {
+      const token = Auth.getToken();
+      if (!token) {
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      const ticketCount = Number(prompt('How many tickets?', '1'));
+      if (!ticketCount || ticketCount < 1) return;
+
+      const res = await fetch('/api/rsvps', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ eventId, ticketCount }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert('Booking confirmed!');
+        checkAvailability(eventId, popupEl);
+      } else if (res.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+      } else {
+        alert(json.error.message);
+      }
+    }
+
+    function addMarker(event) {
+      const marker = L.marker([event.lat, event.lng]).addTo(map);
+      marker.bindPopup(popupHtml(event));
+      marker.on('popupopen', (e) => {
+        const popupEl = e.popup.getElement();
+        checkAvailability(event.id, popupEl);
+        popupEl.querySelector('[data-role="book"]').addEventListener('click', () => {
+          bookEvent(event.id, popupEl);
+        });
+      });
+      markers.push(marker);
+    }
+
+    function renderEvents(events, query) {
+      clearMarkers();
+      const q = (query || '').trim().toLowerCase();
+      const filtered = q
+        ? events.filter(
+            (e) =>
+              e.title.toLowerCase().includes(q) ||
+              (e.venue_name || '').toLowerCase().includes(q)
+          )
+        : events;
+      filtered.forEach(addMarker);
+    }
+
+    async function loadEvents() {
+      const bounds = map.getBounds();
+      const url =
+        `/api/map/events?minLat=${bounds.getSouth()}&maxLat=${bounds.getNorth()}` +
+        `&minLng=${bounds.getWest()}&maxLng=${bounds.getEast()}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.success) {
+        currentEvents = json.data.events;
+        renderEvents(currentEvents, document.getElementById('searchInput').value);
+      }
+    }
+
+    map.on('moveend', loadEvents);
+
+    document.getElementById('searchForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      renderEvents(currentEvents, document.getElementById('searchInput').value);
+    });
+
+    map.whenReady(() => {
+      map.invalidateSize();
+      loadEvents();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a href="/map">Event Finder</a>
+    <div class="links" id="authLinks"></div>
+  </div>
+
+  <div class="container">
+    <% if (!event) { %>
+      <p>Event not found.</p>
+      <a class="btn secondary" href="/map">Back to Map</a>
+    <% } else { %>
+      <div class="event-card" data-event-id="<%= event.id %>">
+        <% if (event.banner_url) { %>
+          <img class="event-banner" src="<%= event.banner_url %>" alt="<%= event.title %>" />
+        <% } %>
+        <h1><%= event.title %></h1>
+        <p class="event-meta"><strong>Category:</strong> <%= event.category %></p>
+        <p class="event-meta"><strong>Venue:</strong> <%= event.venue_name %></p>
+        <p class="event-meta" id="eventDates"></p>
+        <p><%= event.description %></p>
+        <p class="event-meta capacity" data-role="capacity">Checking availability&hellip;</p>
+
+        <button class="btn" id="bookBtn" disabled>Book Now</button>
+        <a class="btn secondary" href="/map">Back to Map</a>
+      </div>
+    <% } %>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <% if (event) { %>
+  <script>
+    Auth.renderTopbarLinks(document.getElementById('authLinks'));
+
+    const eventId = <%= event.id %>;
+    const startsAt = new Date('<%= event.starts_at %>');
+    const endsAt = new Date('<%= event.ends_at %>');
+    document.getElementById('eventDates').innerHTML =
+      `<strong>When:</strong> ${startsAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}` +
+      ` &ndash; ${endsAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`;
+
+    const capacityEl = document.querySelector('[data-role="capacity"]');
+    const bookBtn = document.getElementById('bookBtn');
+
+    async function checkAvailability() {
+      try {
+        const res = await fetch(`/api/events/${eventId}/availability`);
+        const json = await res.json();
+        if (!json.success) {
+          capacityEl.textContent = json.error.message;
+          return;
+        }
+        const { remainingCapacity, capacity } = json.data;
+        if (remainingCapacity > 0) {
+          capacityEl.textContent = `${remainingCapacity} / ${capacity} spots left`;
+          capacityEl.className = 'event-meta capacity available';
+          bookBtn.disabled = false;
+        } else {
+          capacityEl.textContent = 'Sold out';
+          capacityEl.className = 'event-meta capacity sold-out';
+          bookBtn.disabled = true;
+        }
+      } catch (err) {
+        capacityEl.textContent = 'Could not check availability';
+      }
+    }
+
+    bookBtn.addEventListener('click', async () => {
+      const token = Auth.getToken();
+      if (!token) {
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      const ticketCount = Number(prompt('How many tickets?', '1'));
+      if (!ticketCount || ticketCount < 1) return;
+
+      const res = await fetch('/api/rsvps', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ eventId, ticketCount }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert('Booking confirmed!');
+        checkAvailability();
+      } else if (res.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+      } else {
+        alert(json.error.message);
+      }
+    });
+
+    checkAvailability();
+  </script>
+  <% } %>
+</body>
+</html>
