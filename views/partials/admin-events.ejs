@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>📋 <%= title %></h1>
+            <div class="user-info">
+                <span>Welcome, <strong><%= user %></strong></span>
+                <span class="badge">admin</span>
+                <a href="/" class="logout-btn">Logout</a>
+            </div>
+        </div>
+        
+        <div class="dashboard-nav">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/users">Manage Users</a>
+            <a href="/admin/events" class="active">Manage Events</a>
+        </div>
+        
+        <div class="dashboard-content">
+            <h2>All Events</h2>
+            <% if (events && events.length > 0) { %>
+                <div class="card-grid">
+                    <% events.forEach(event => { %>
+                        <div class="card">
+                            <h3><%= event.title %></h3>
+                            <p><%= event.description ? event.description.substring(0, 150) : 'No description' %></p>
+                            <p><strong>Organiser:</strong> <%= event.organiser_name %></p>
+                            <p>
+                                <strong>Status:</strong>
+                                <span class="badge"><%= event.status %></span>
+                            </p>
+                            
+                            <% if (event.status === 'pending') { %>
+                            
+                            <form action="/admin/events/<%= event.id %>/status" method="POST" style="display:inline;">
+                                <input type="hidden" name="status" value="approved">
+                                <button type="submit" style="background:green;color:white;">
+                                    ✓ Approve
+                                </button>
+                            </form>
+                            
+                            <form action="/admin/events/<%= event.id %>/status" method="POST" style="display:inline;">
+                                <input type="hidden" name="status" value="rejected">
+                                <button type="submit" style="background:red;color:white;">
+                                    ✗ Reject
+                                </button>
+                            </form>
+                            
+                            <% } else if (event.status === 'approved') { %>
+                            
+                            <form action="/admin/events/<%= event.id %>/status" method="POST">
+                                <input type="hidden" name="status" value="rejected">
+                                <button type="submit" style="background:red;color:white;">
+                                    Reject
+                                </button>
+                            </form>
+                            
+                            <% } else { %>
+                            
+                            <form action="/admin/events/<%= event.id %>/status" method="POST">
+                                <input type="hidden" name="status" value="approved">
+                                <button type="submit" style="background:green;color:white;">
+                                    Approve
+                                </button>
+                            </form>
+                            
+                            <% } %>
+                            <p><strong>RSVPs:</strong> <%= event.rsvp_count || 0 %></p>
+                            <p><strong>Date:</strong> <%= new Date(event.starts_at).toLocaleDateString() %></p>
+                            <p><strong>Venue:</strong> <%= event.venue_name || 'TBD' %></p>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p>No events found.</p>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>

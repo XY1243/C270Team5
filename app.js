@@ -15,6 +15,7 @@ const authController = require('./src/controllers/auth.controller');
 const eventsRoutes = require('./src/routes/events.routes');
 const rsvpsRoutes = require('./src/routes/rsvps.routes');
 const mapRoutes = require('./src/routes/map.routes');
+const adminRoutes = require('./src/routes/admin.routes');
 
 // Error Middleware Handlers
 const notFound = require('./src/middleware/notFound');
@@ -160,7 +161,9 @@ app.post('/login', async (req, res) => {
     const encodedRole = encodeURIComponent(user.role);
 
     // Redirect based on user role
-    if (user.role === 'organiser') {
+    if (user.role === 'admin') {
+        return res.redirect(`/admin/dashboard?user=${encodedName}&role=${encodedRole}`);
+    } else if (user.role === 'organiser') {
         return res.redirect(`/organiser/dashboard?user=${encodedName}&role=${encodedRole}`);
     } else {
         return res.redirect(`/user/dashboard?user=${encodedName}&role=${encodedRole}`);
@@ -312,6 +315,189 @@ app.get('/organiser/create-event', (req, res) => {
     });
 });
 
+// ==================== ADMIN ROUTES ====================
+
+app.get('/admin/dashboard', async (req, res) => {
+    try {
+        const db = getPool();
+        const [userCount] = await db.query('SELECT COUNT(*) as count FROM users');
+        const [eventCount] = await db.query('SELECT COUNT(*) as count FROM events');
+        const [pendingEvents] = await db.query('SELECT COUNT(*) as count FROM events WHERE status = "pending"');
+        const [recentUsers] = await db.query(
+            'SELECT id, name, email, role, status, created_at FROM users ORDER BY created_at DESC LIMIT 5'
+        );
+        const [recentEvents] = await db.query(
+            'SELECT e.*, u.name as organiser_name FROM events e JOIN users u ON e.organiser_id = u.id ORDER BY e.created_at DESC LIMIT 5'
+        );
+        
+        res.render('partials/admin-dashboard', { 
+            title: 'Admin Dashboard',
+            user: req.query.user || 'Admin',
+            role: 'admin',
+            stats: {
+                users: userCount[0].count,
+                events: eventCount[0].count,
+                pending: pendingEvents[0].count
+            },
+            recentUsers: recentUsers,
+            recentEvents: recentEvents
+        });
+    } catch (error) {
+        console.error('Error fetching admin data:', error);
+        res.render('partials/admin-dashboard', { 
+            title: 'Admin Dashboard',
+            user: req.query.user || 'Admin',
+            role: 'admin',
+            stats: { users: 0, events: 0, pending: 0 },
+            recentUsers: [],
+            recentEvents: []
+        });
+    }
+});
+
+app.get('/admin/users', async (req, res) => {
+    try {
+        const db = getPool();
+        const [users] = await db.query(
+            'SELECT id, name, email, role, status, created_at FROM users ORDER BY created_at DESC'
+        );
+        
+        res.render('partials/admin-users', { 
+            title: 'Manage Users',
+            user: req.query.user || 'Admin',
+            users: users
+        });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.render('partials/admin-users', { 
+            title: 'Manage Users',
+            user: req.query.user || 'Admin',
+            users: []
+        });
+    }
+});
+
+
+app.post('/admin/users/:id/role', async (req, res) => {
+    try {
+        const db = getPool();
+
+        // Prevent removing admin from the main admin account
+        if (req.params.id == 1) {
+            return res.status(403).send("Cannot change role of the main administrator.");
+        }
+
+        await db.query(
+            'UPDATE users SET role = ? WHERE id = ?',
+            [req.body.role, req.params.id]
+        );
+
+        res.redirect('/admin/users');
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Failed to update user.');
+    }
+});
+
+
+app.get('/admin/events', async (req, res) => {
+    try {
+        const db = getPool();
+        const [events] = await db.query(
+            `SELECT e.*, u.name as organiser_name, COUNT(r.id) as rsvp_count 
+             FROM events e 
+             JOIN users u ON e.organiser_id = u.id 
+             LEFT JOIN rsvps r ON e.id = r.event_id 
+             GROUP BY e.id 
+             ORDER BY e.created_at DESC`
+        );
+        
+        res.render('partials/admin-events', { 
+            title: 'Manage Events',
+            user: req.query.user || 'Admin',
+            events: events
+        });
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.render('partials/admin-events', { 
+            title: 'Manage Events',
+            user: req.query.user || 'Admin',
+            events: []
+        });
+    }
+});
+
+app.post('/admin/events/:id/status', async (req, res) => {
+    try {
+        const db = getPool();
+
+        const { status } = req.body;
+
+        // Only allow approved or rejected
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).send('Invalid event status.');
+        }
+
+        await db.query(
+            'UPDATE events SET status = ? WHERE id = ?',
+            [status, req.params.id]
+        );
+
+        res.redirect('/admin/events');
+
+    } catch (error) {
+        console.error('Event Status Error:', error);
+        res.status(500).send('Failed to update event status.');
+    }
+});
+
+app.post('/admin/users/:id/status', async (req, res) => {
+    try {
+        const db = getPool();
+
+        // Prevent suspending the main admin account
+        if (req.params.id == 1) {
+            return res.status(403).send("Cannot suspend the main administrator.");
+        }
+
+
+        await db.query(
+            'UPDATE users SET status = ? WHERE id = ?',
+            [req.body.status, req.params.id]
+        );
+
+        res.redirect('/admin/users');
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Failed to update user status.');
+    }
+});
+
+app.post('/admin/users/:id/delete', async (req, res) => {
+    try {
+        const db = getPool();
+
+        // Prevent deleting the main admin account
+        if (req.params.id == 1) {
+            return res.status(403).send("Cannot delete the main administrator.");
+        }
+
+
+        await db.query(
+            'DELETE FROM users WHERE id = ?',
+            [req.params.id]
+        );
+
+        res.redirect('/admin/users');
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Failed to delete user.');
+    }
+});
+
 // ==================== API ROUTES ====================
 
 // Get all events (API)
@@ -376,6 +562,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/rsvps', rsvpsRoutes);
 app.use('/api/map', mapRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ==================== ERROR HANDLING ====================
 
@@ -418,8 +605,9 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`🚀 Server running on http://localhost:${PORT}`);
         console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`👥 Roles: User | Organiser`);
+        console.log(`👥 Roles: User | Organiser | Admin`);
         console.log(`🔐 Test Accounts:`);
+        console.log(`   Admin: admin@example.com / Password123!`);
         console.log(`   Organiser: organiser@example.com / Password123!`);
     });
 }

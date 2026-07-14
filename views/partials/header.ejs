@@ -27,7 +27,8 @@
           try {
             const user = JSON.parse(localStorage.getItem('authUser') || 'null');
             if (user && user.role) {
-              if (user.role === 'organiser') link.href = '/organiser/dashboard';
+              if (user.role === 'admin') link.href = '/admin/dashboard';
+              else if (user.role === 'organiser') link.href = '/organiser/dashboard';
               else link.href = '/user/dashboard';
             } else {
               link.href = '/login?next=/';
