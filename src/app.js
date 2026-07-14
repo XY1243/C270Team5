@@ -9,27 +9,19 @@ const eventsRoutes = require('./routes/events.routes');
 const rsvpsRoutes = require('./routes/rsvps.routes');
 const mapRoutes = require('./routes/map.routes');
 const adminRoutes = require('./routes/admin.routes');
-<<<<<<< HEAD
 const viewsRoutes = require('./routes/views.routes');
-=======
->>>>>>> origin/main
 
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-<<<<<<< HEAD
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(__dirname, '..', 'views'));
 
 app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json());
 app.use(express.static(path.resolve(__dirname, '..', 'public')));
-=======
-app.use(cors({ origin: env.corsOrigin }));
-app.use(express.json());
->>>>>>> origin/main
 app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
 
 app.use('/api/auth', authRoutes);
@@ -39,11 +31,8 @@ app.use('/api/rsvps', rsvpsRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/admin', adminRoutes);
 
-<<<<<<< HEAD
 app.use('/', viewsRoutes);
 
-=======
->>>>>>> origin/main
 app.use(notFound);
 app.use(errorHandler);
 

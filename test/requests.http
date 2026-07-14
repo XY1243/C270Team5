@@ -49,13 +49,8 @@ Authorization: Bearer {{organiserToken}}
   "description": "Created during manual verification",
   "category": "tech",
   "venueName": "Test Hall",
-<<<<<<< HEAD
   "lat": 1.2936,
   "lng": 103.8580,
-=======
-  "lat": 37.7750,
-  "lng": -122.4195,
->>>>>>> origin/main
   "startsAt": "2026-08-01T18:00:00",
   "endsAt": "2026-08-01T20:00:00",
   "capacity": 2
@@ -87,11 +82,7 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/events
 
 ### 4. Map bounding box covering the event's lat/lng
-<<<<<<< HEAD
 GET {{baseUrl}}/map/events?minLat=1.29&maxLat=1.30&minLng=103.85&maxLng=103.87
-=======
-GET {{baseUrl}}/map/events?minLat=37.77&maxLat=37.78&minLng=-122.43&maxLng=-122.41
->>>>>>> origin/main
 
 ### 5a. Check availability
 GET {{baseUrl}}/events/{{eventId}}/availability
