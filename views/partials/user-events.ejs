@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="public/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>📅 <%= title %></h1>
+            <div class="user-info">
+                <span>Welcome, <strong><%= user %></strong></span>
+                <span class="badge">user</span>
+                <a href="/" class="logout-btn">Logout</a>
+            </div>
+        </div>
+        
+        <div class="dashboard-nav">
+            <a href="/user/dashboard">Dashboard</a>
+            <a href="/user/events" class="active">Browse Events</a>
+            <a href="/user/map">Map</a>
+        </div>
+        
+        <div class="dashboard-content">
+            <h2>All Events</h2>
+            <% if (events && events.length > 0) { %>
+                <div class="card-grid">
+                    <% events.forEach(event => { %>
+                        <div class="card">
+                            <h3><%= event.title %></h3>
+                            <p><%= event.description ? event.description.substring(0, 150) : 'No description' %></p>
+                            <p><strong>Organiser:</strong> <%= event.organiser_name %></p>
+                            <p><strong>Category:</strong> <%= event.category || 'General' %></p>
+                            <p><strong>Date:</strong> <%= new Date(event.starts_at).toLocaleDateString() %></p>
+                            <p><strong>Venue:</strong> <%= event.venue_name || 'TBD' %></p>
+                            <p><strong>Capacity:</strong> <%= event.capacity || 'Unlimited' %></p>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p>No events available.</p>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>

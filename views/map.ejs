@@ -14,7 +14,7 @@
   <%- include('partials/header') %>
 
   <div class="bg-dark text-white py-2 px-4 shadow-sm d-flex justify-content-between align-items-center border-top border-secondary">
-    <h5 class="mb-0 text-white font-monospace fw-bold"><%=  %></h5>
+    <h5 class="mb-0 text-white font-monospace fw-bold"><%= title %></h5>
     <div id="authLinks" class="small"></div>
   </div>
 
@@ -161,27 +161,15 @@
       const json = await res.json();
       if (json.success) {
         currentEvents = json.data.events;
-        // renderEvents(currentEvents, document.getElementById('searchInput').value);
+        renderEvents(currentEvents, document.getElementById('searchInput').value);
       }
     }
 
+    map.on('moveend', loadEvents);
     document.getElementById('searchForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const searchInputValue = document.getElementById('searchInput').value.trim();
-      
-      if (searchInputValue === '') {
-        clearMarkers(); // If search box is empty, clear the map pins entirely
-      } else {
-        renderEvents(currentEvents, searchInputValue); // Drop pins only for matches
-      }
+      renderEvents(currentEvents, document.getElementById('searchInput').value);
     });
-    
-    // map.on('moveend', loadEvents);
-    // document.getElementById('searchForm').addEventListener('submit', (e) => {
-    //   e.preventDefault();
-    //   renderEvents(currentEvents, document.getElementById('searchInput').value);
-    // });
-
     map.whenReady(() => {
       map.invalidateSize();
       loadEvents();

@@ -7,8 +7,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <title>Events Finder</title>
     <style>
+        /* Ensures the container fills up vertical space below your navigation header */
         .form-wrapper {
-            min-height: calc(100vh - 56px);
+            min-height: calc(100vh - 56px); 
         }
     </style>
 </head>
@@ -19,11 +20,11 @@
         <div class="w-100" style="max-width: 600px;">
             <h2 class="text-center mb-4">Create New Event</h2>
             
-            <form action="/submitted" method="POST" class="card p-4 shadow-sm bg-white rounded">
+            <form id="createEventForm" class="card p-4 shadow-sm bg-white rounded">
                 
                 <div class="mb-3">
-                    <label for="name" class="form-label font-weight-bold">Event Title:</label>
-                    <input type="text" class="form-control" id="name" placeholder="Enter title e.g., Tech Networking Mixer" name="name" required>
+                    <label for="title" class="form-label font-weight-bold">Event Title:</label>
+                    <input type="text" class="form-control" id="title" placeholder="Enter title e.g., Tech Networking Mixer" name="title" required>
                 </div>
 
                 <div class="row">
@@ -39,13 +40,30 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="venue" class="form-label">Venue Name:</label>
+                    <input type="text" class="form-control" id="venue" name="venue" placeholder="Enter venue name" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="lat" class="form-label">Latitude:</label>
+                        <input type="number" class="form-control" step="0.000001" id="lat" name="lat" placeholder="1.290" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="lng" class="form-label">Longitude:</label>
+                        <input type="number" class="form-control" step="0.000001" id="lng" name="lng" placeholder="103.851" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="capacity" class="form-label">Capacity:</label>
+                        <input type="number" class="form-control" id="capacity" name="capacity" placeholder="100" min="1" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
                     <label for="type" class="form-label">Event Type:</label>
                     <select id="type" name="type" class="form-select">
-                        <option value="networking" selected>Networking</option>
-                        <option value="social">Social/ Party</option>
-                        <option value="arts">Arts</option>
-                        <option value="tech">Tech</option>
-                        <option value="games">Games</option>
+                        <option value="Networking" selected>Networking</option>
+                        <option value="Social/Party">Social/ Party</option>
                     </select>
                 </div>
 
@@ -58,11 +76,88 @@
                     <strong>⚠️ Notice:</strong> Your event will be submitted as pending. Please do not panic when it does not show up publicly right away; it must be authorized by an administrator first.
                 </div>
 
+                <div id="formError" class="alert alert-danger d-none"></div>
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="/entry" class="btn btn-secondary px-4">Cancel</a>
+                    <a id="cancelLink" href="/organiser/dashboard" class="btn btn-secondary px-4">Cancel</a>
                     <button type="submit" class="btn btn-primary px-4">Request</button>
                 </div>
+
             </form>
+
+            <script src="/js/auth.js"></script>
+            <script>
+              const form = document.getElementById('createEventForm');
+              const errorBox = document.getElementById('formError');
+              const cancelLink = document.getElementById('cancelLink');
+              const user = Auth.getUser();
+
+              if (!user || (user.role !== 'organiser' && user.role !== 'admin')) {
+                window.location.href = '/login?next=/';
+              }
+
+              if (cancelLink) {
+                cancelLink.href = user.role === 'admin' ? '/admin/dashboard' : '/organiser/dashboard';
+              }
+
+              function showError(message) {
+                errorBox.textContent = message;
+                errorBox.classList.remove('d-none');
+              }
+
+              form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                errorBox.classList.add('d-none');
+
+                const token = Auth.getToken();
+                if (!token) {
+                  window.location.href = '/login?next=/organiser/create-event';
+                  return;
+                }
+
+                const title = document.getElementById('title').value.trim();
+                const date = document.getElementById('date').value;
+                const time = document.getElementById('time').value;
+                const venueName = document.getElementById('venue').value.trim();
+                const lat = parseFloat(document.getElementById('lat').value);
+                const lng = parseFloat(document.getElementById('lng').value);
+                const capacity = Number(document.getElementById('capacity').value);
+                const description = document.getElementById('descriptions').value.trim();
+                const category = document.getElementById('type').value;
+
+                if (!title || !date || !time || !venueName || Number.isNaN(lat) || Number.isNaN(lng) || !capacity) {
+                  showError('Please fill in all required event fields.');
+                  return;
+                }
+
+                const startsAt = `${date}T${time}:00`;
+
+                const response = await fetch('/api/events', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    title,
+                    description,
+                    category,
+                    venueName,
+                    lat,
+                    lng,
+                    startsAt,
+                    capacity,
+                  }),
+                });
+
+                const json = await response.json();
+                if (!json.success) {
+                  showError(json.error?.message || 'Could not create event.');
+                  return;
+                }
+
+                window.location.href = '/organiser/events';
+              });
+            </script>
         </div>
     </div>
 </body>
