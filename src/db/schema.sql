@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('user', 'organiser', 'admin') NOT NULL DEFAULT 'user',
   status ENUM('active', 'suspended') NOT NULL DEFAULT 'active',
+  google_refresh_token TEXT DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS rsvps (
   user_id INT NOT NULL,
   ticket_count INT NOT NULL DEFAULT 1,
   status ENUM('confirmed', 'cancelled') NOT NULL DEFAULT 'confirmed',
+  google_event_id VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_rsvps_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
   CONSTRAINT fk_rsvps_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

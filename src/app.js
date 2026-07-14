@@ -1,7 +1,11 @@
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+<<<<<<< Updated upstream
 const env = require('./config/env');
+=======
+const env = require('./config/env') || {};
+>>>>>>> Stashed changes
 
 const authRoutes = require('./routes/auth.routes');
 const usersRoutes = require('./routes/users.routes');
@@ -19,7 +23,10 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(__dirname, '..', 'views'));
 
@@ -31,6 +38,10 @@ app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json());
 >>>>>>> origin/main
 app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
+
+app.get('/my-bookings', (req, res) => {
+  res.render('my_bookings', { title: 'My Bookings' });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
