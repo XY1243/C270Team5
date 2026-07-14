@@ -27,5 +27,16 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XY1243/C270Team5.git"
+  },
+  "bugs": {
+    "url": "https://github.com/XY1243/C270Team5/issues"
+  },
+  "homepage": "https://github.com/XY1243/C270Team5#readme"
 }
