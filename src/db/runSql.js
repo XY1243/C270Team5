@@ -11,19 +11,6 @@ async function main() {
   }
 
   const sql = fs.readFileSync(path.resolve(sqlFile), 'utf8');
-    const bootstrap = await mysql.createConnection({
-    host: env.db.host,
-    port: env.db.port,
-    user: env.db.user,
-    password: env.db.password,
-  });
-  try {
-    await bootstrap.query(
-      `CREATE DATABASE IF NOT EXISTS \`${env.db.name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
-    );
-  } finally {
-    await bootstrap.end();
-  }
 
   const connection = await mysql.createConnection({
     host: env.db.host,
