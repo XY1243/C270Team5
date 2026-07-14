@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="public/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>🎪 <%= title %></h1>
+            <div class="user-info">
+                <span>Welcome, <strong><%= user %></strong></span>
+                <span class="badge"><%= role %></span>
+                <a href="/" class="logout-btn">Logout</a>
+            </div>
+        </div>
+        
+        <div class="dashboard-nav">
+            <a href="/organiser/dashboard" class="active">Dashboard</a>
+            <a href="/organiser/events">My Events</a>
+            <a href="/organiser/create-event">Create Event</a>
+            <a href="/user/map">Map</a>
+        </div>
+        
+        <div class="dashboard-content">
+            <h2>Your Events</h2>
+            <% if (events && events.length > 0) { %>
+                <div class="card-grid">
+                    <% events.forEach(event => { %>
+                        <div class="card">
+                            <h3><%= event.title %></h3>
+                            <p><%= event.description ? event.description.substring(0, 100) : 'No description' %></p>
+                            <p><strong>Status:</strong> <span class="badge"><%= event.status %></span></p>
+                            <p><strong>RSVPs:</strong> <%= event.rsvp_count || 0 %></p>
+                            <p><strong>Date:</strong> <%= new Date(event.starts_at).toLocaleDateString() %></p>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p>You haven't created any events yet.</p>
+                <a href="/organiser/create-event" class="btn-login" style="display: inline-block; width: auto; padding: 10px 30px; text-decoration: none;">Create Your First Event</a>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>

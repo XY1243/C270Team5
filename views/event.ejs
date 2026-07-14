@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title><%= title %></title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Top Navigation Bar -->
+  <div class="topbar bg-white shadow-sm py-4 px-6 flex justify-between items-center sticky top-0 z-10">
+    <a href="/map" class="text-blue-600 font-bold hover:underline text-lg">Event Finder</a>
+    <div class="links" id="authLinks"></div>
+  </div>
+
+  <!-- Main Content Container -->
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    
+    <% if (!event) { %>
+      <!-- Event Not Found State -->
+      <p class="text-gray-700 text-lg mb-4">Event not found.</p>
+      <a class="btn secondary bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" href="/map">Back to Map</a>
+    <% } else { %>
+      
+      <!-- Event Details Card -->
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-8" data-event-id="<%= event.id %>">
+        
+        <!-- Banner Image (if exists) -->
+        <% if (event.banner_url) { %>
+          <img class="w-full h-64 object-cover rounded-lg mb-6" src="<%= event.banner_url %>" alt="<%= event.title %>" />
+        <% } %>
+        
+        <!-- Title -->
+        <h1 class="text-3xl font-bold text-gray-900 mb-2"><%= event.title %></h1>
+        
+        <!-- Metadata Badges -->
+        <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-6">
+            <p class="bg-gray-100 px-3 py-1 rounded-full"><strong>Category:</strong> <%= event.category %></p>
+            <p class="bg-gray-100 px-3 py-1 rounded-full"><strong>Venue:</strong> <%= event.venue_name %></p>
+            <p class="bg-gray-100 px-3 py-1 rounded-full" id="eventDates"></p>
+        </div>
+
+        <!-- Description -->
+        <p class="text-gray-700 leading-relaxed mb-6 whitespace-pre-line"><%= event.description %></p>
+        
+        <!-- Footer: Availability & Actions -->
+        <div class="flex items-center justify-between border-t border-gray-100 pt-6 mt-6">
+            <p class="text-lg font-medium capacity" data-role="capacity">Checking availability&hellip;</p>
+            <div class="flex items-center gap-4">
+                <a class="text-gray-500 hover:text-gray-800 font-medium transition-colors" href="/map">Back to Map</a>
+                <!-- The Trigger Button -->
+                <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm" id="openModalBtn" disabled>Book Now</button>
+            </div>
+        </div>
+      </div>
+
+      <!-- RSVP Modal (Tailwind Styled) -->
+      <div id="rsvp-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 relative transform transition-transform" id="modal-content">
+            
+            <!-- Close Button -->
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- Booking Form Step -->
+            <div id="rsvpFormStep" class="block">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Complete your RSVP</h2>
+                <p class="text-sm text-gray-500 mb-6">Select the number of tickets you need for <strong><%= event.title %></strong>.</p>
+                
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                <select id="ticketCount" class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all">
+                    <option value="1">1 Person</option>
+                    <option value="2">2 People</option>
+                    <option value="3">3 People</option>
+                    <option value="4">4 People</option>
+                </select>
+                
+                <button class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md" id="confirmRsvpBtn">Confirm Booking</button>
+            </div>
+
+            <!-- Success Step -->
+            <div id="rsvpSuccessStep" class="hidden text-center py-4">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <h3 class="text-gray-900 text-2xl font-bold mb-2">Booking Confirmed!</h3>
+                <p class="text-sm text-gray-500 mb-8">Your RSVP has been securely saved to the database.</p>
+                
+                <div class="space-y-3">
+                    <!-- Add to Google Calendar Button -->
+                    <button onclick="addToGoogleCalendar()" class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center shadow-sm">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5zm7 5h5v5h-5z"/></svg>
+                        Add to Google Calendar
+                    </button>
+                    
+                    <!-- Close Button -->
+                    <button onclick="closeModal()" class="w-full text-red-600 hover:bg-red-50 font-bold py-3 px-6 rounded-lg transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+      </div>
+
+    <% } %>
+  </div>
+
+  <!-- Auth Script -->
+  <script src="/js/auth.js"></script>
+  
+  <% if (event) { %>
+  <script>
+    // Initialize Topbar Links
+    Auth.renderTopbarLinks(document.getElementById('authLinks'));
+    
+    // Safely inject backend data into Javascript using JSON.stringify to prevent XSS/Syntax errors
+    const eventId = <%= event.id %>;
+    const eventTitle = <%- JSON.stringify(event.title || '') %>;
+    const eventLocation = <%- JSON.stringify(event.venue_name || '') %>;
+    const eventDescription = <%- JSON.stringify(event.description || '') %>;
+    
+    // Format Dates for Display
+    const startsAt = new Date('<%= event.starts_at %>');
+    const endsAt = new Date('<%= event.ends_at %>');
+    
+    document.getElementById('eventDates').innerHTML = 
+      `<strong>When:</strong> ${startsAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}` + 
+      ` &ndash; ${endsAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`;
+
+    // Modal Elements
+    const modal = document.getElementById('rsvp-modal');
+    const formStep = document.getElementById('rsvpFormStep');
+    const successStep = document.getElementById('rsvpSuccessStep');
+    const openBtn = document.getElementById('openModalBtn');
+    const confirmRsvpBtn = document.getElementById('confirmRsvpBtn');
+    const ticketCountSelect = document.getElementById('ticketCount');
+    const capacityEl = document.querySelector('[data-role="capacity"]');
+
+    // Open Modal Logic
+    function openModal() {
+        const token = Auth.getToken();
+        if (!token) {
+            window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+            return;
+        }
+        formStep.classList.remove('hidden');
+        successStep.classList.add('hidden');
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    // Close Modal Logic
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto'; // Restore scrolling
+        checkAvailability(); // Refresh capacity when modal closes
+    }
+
+    // Connect Open Button
+    openBtn.addEventListener('click', openModal);
+
+    // Fetch Availability from API
+    async function checkAvailability() {
+      try {
+        const res = await fetch(`/api/events/${eventId}/availability`);
+        const json = await res.json();
+        
+        if (!json.success) {
+          capacityEl.textContent = json.error.message;
+          return;
+        }
+        
+        const { remainingCapacity, capacity } = json.data;
+        if (remainingCapacity > 0) {
+          capacityEl.textContent = `${remainingCapacity} / ${capacity} spots left`;
+          capacityEl.className = 'text-green-600 font-bold';
+          openBtn.disabled = false;
+        } else {
+          capacityEl.textContent = 'Sold out';
+          capacityEl.className = 'text-red-600 font-bold';
+          openBtn.disabled = true;
+        }
+      } catch (err) {
+        capacityEl.textContent = 'Could not check availability';
+      }
+    }
+
+    // Confirm Booking Logic
+    confirmRsvpBtn.addEventListener('click', async () => {
+      const token = Auth.getToken();
+      const ticketCount = Number(ticketCountSelect.value);
+      
+      // Show Loading State (Spinner)
+      confirmRsvpBtn.disabled = true;
+      confirmRsvpBtn.innerHTML = `<svg class="animate-spin h-5 w-5 mx-auto text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+      try {
+        const res = await fetch('/api/rsvps', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ eventId, ticketCount }),
+        });
+        const json = await res.json();
+        
+        // Reset Button State
+        confirmRsvpBtn.disabled = false;
+        confirmRsvpBtn.textContent = 'Confirm Booking';
+
+        if (json.success) {
+          // Trigger Success Screen
+          formStep.classList.add('hidden');
+          successStep.classList.remove('hidden');
+          checkAvailability(); // Refresh remaining capacity!
+        } else if (res.status === 401) {
+          window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        } else {
+          alert(json.error.message);
+        }
+      } catch (err) {
+        // Handle Network Errors
+        confirmRsvpBtn.disabled = false;
+        confirmRsvpBtn.textContent = 'Confirm Booking';
+        alert('A network error occurred. Please try again.');
+      }
+    });
+
+    // Add to Google Calendar Logic
+    function addToGoogleCalendar() {
+      const gcalStart = startsAt.toISOString().replace(/-|:|\.\d\d\d/g, '');
+      const gcalEnd = endsAt.toISOString().replace(/-|:|\.\d\d\d/g, '');
+      
+      // Safety Fix: Strip HTML tags and truncate description to prevent URL length issues in GCal
+      const safeDescription = eventDescription.replace(/<[^>]*>/g, '').substring(0, 200);
+
+      const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${gcalStart}/${gcalEnd}&details=${encodeURIComponent(safeDescription)}&location=${encodeURIComponent(eventLocation)}`;
+      
+      window.open(gCalUrl, '_blank');
+    }
+
+    // Run availability check on load
+    checkAvailability();
+  </script>
+  <% } %>
+</body>
+</html>
