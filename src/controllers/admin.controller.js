@@ -52,6 +52,56 @@ const getAnalytics = asyncHandler(async (req, res) => {
   return success(res, analytics);
 });
 
+const changeUserRole = asyncHandler(async (req, res) => {
+  const { role } = req.body;
+  const allowedRoles = [
+    'user',
+    'organiser'
+  ];
+  if (!allowedRoles.includes(role)) {
+    return fail(
+      res,
+      400,
+      'INVALID_ROLE',
+      'Role must be user or organiser'
+    );
+  }
+  const user = await userModel.changeRole(
+    req.params.id,
+    role
+  );
+  if (!user) {
+    return fail(
+      res,
+      404,
+      'NOT_FOUND',
+      'User not found'
+    );
+  }
+  return success(res, {
+    user
+  });
+});
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const deleted = await userModel.deleteUser(
+    req.params.id
+  );
+  if (!deleted) {
+    return fail(
+      res,
+      404,
+      'NOT_FOUND',
+      'User not found'
+    );
+  }
+  return success(res, {
+    message: "User deleted successfully"
+  });
+});
+
+
+
 module.exports = {
   listPendingEvents,
   approveEvent,
@@ -60,4 +110,6 @@ module.exports = {
   suspendUser,
   reactivateUser,
   getAnalytics,
+  changeUserRole,
+  deleteUser,
 };

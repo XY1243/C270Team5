@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>🎯 <%= title %></h1>
+            <div class="user-info">
+                <span>Welcome, <strong><%= user %></strong></span>
+                <span class="badge"><%= role %></span>
+                <a href="/" class="logout-btn">Logout</a>
+            </div>
+        </div>
+        
+        <div class="dashboard-nav">
+            <a href="/user/dashboard" class="active">Dashboard</a>
+            <a href="/user/events">Browse Events</a>
+            <a href="/user/map">Map</a>
+        </div>
+        
+        <div class="dashboard-content">
+            <h2>Upcoming Events</h2>
+            <% if (events && events.length > 0) { %>
+                <div class="card-grid">
+                    <% events.forEach(event => { %>
+                        <div class="card">
+                            <h3><%= event.title %></h3>
+                            <p><%= event.description ? event.description.substring(0, 100) : 'No description' %></p>
+                            <p><strong>Organiser:</strong> <%= event.organiser_name %></p>
+                            <p><strong>Date:</strong> <%= new Date(event.starts_at).toLocaleDateString() %></p>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p>No upcoming events found.</p>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>

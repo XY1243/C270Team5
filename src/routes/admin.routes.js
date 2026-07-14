@@ -12,6 +12,8 @@ router.patch('/events/:id/reject', controller.rejectEvent);
 router.get('/users', controller.listUsers);
 router.patch('/users/:id/suspend', controller.suspendUser);
 router.patch('/users/:id/reactivate', controller.reactivateUser);
+router.patch('/users/:id/role', controller.changeUserRole);
+router.delete('/users/:id', controller.deleteUser);
 router.get('/analytics', controller.getAnalytics);
 
 module.exports = router;

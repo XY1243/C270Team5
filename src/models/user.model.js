@@ -52,11 +52,39 @@ async function getPlatformAnalytics() {
   return { users: userCounts, events: eventCounts, rsvps: rsvpCounts };
 }
 
+async function changeRole(id, role) {
+
+  await pool.query(
+    'UPDATE users SET role = ? WHERE id = ?',
+    [
+      role,
+      id
+    ]
+  );
+
+  return findById(id);
+}
+
+
+async function deleteUser(id) {
+
+  const [result] = await pool.query(
+    'DELETE FROM users WHERE id = ?',
+    [
+      id
+    ]
+  );
+
+  return result.affectedRows > 0;
+}
+
 module.exports = {
   createUser,
   findByEmail,
   findById,
   listUsers,
   setStatus,
+  changeRole,
+  deleteUser,
   getPlatformAnalytics,
 };

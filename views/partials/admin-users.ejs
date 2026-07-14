@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>👥 <%= title %>
+            </h1>
+            <div class="user-info">
+                <span>Welcome, <strong>
+                        <%= user %>
+                    </strong></span>
+                <span class="badge">admin</span>
+
+                <a href="/" class="logout-btn">Logout</a>
+            </div>
+        </div>
+
+
+        <div class="dashboard-nav">
+
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/users" class="active">Manage Users</a>
+            <a href="/admin/events">Manage Events</a>
+        </div>
+
+        <div class="dashboard-content">
+            <h2>All Users</h2>
+            <% if (users && users.length> 0) { %>
+                <div class="card-grid">
+                    <% users.forEach(user=> { %>
+                        <div class="card">
+                            <h3>
+                                <%= user.name %>
+                            </h3>
+                            <p>
+                                <strong>Email:</strong>
+                                <%= user.email %>
+                            </p>
+                            <p>
+                                <strong>Role:</strong>
+                                <span class="badge"><%= user.role %></span>
+                            </p>
+                            <p>
+                                <strong>Status:</strong>
+                                <span class="badge"><%= user.status %></span>
+                            </p>
+                            <p>
+                                <strong>Joined:</strong>
+                                <%= new Date(user.created_at) .toLocaleDateString() %>
+                            </p>
+                            <form action="/admin/users/<%= user.id %>/role" method="POST">
+                                <select name="role">
+                                    <option value="user"
+                                        <%= user.role === "user" ? "selected" : "" %>>
+                                        User
+                                    </option>
+                                    <option value="organiser"
+                                        <%= user.role === "organiser" ? "selected" : "" %>>
+                                        Organiser
+                                    </option>
+                                </select>
+                                <button type="submit">Update Role</button>
+                            </form>
+                            <br>
+                            <form action="/admin/users/<%= user.id %>/status" method="POST">
+                                <select name="status">
+                                    <option value="active"
+                                        <%= user.status === "active" ? "selected" : "" %>>
+                                        Active</option>
+                                    <option value="suspended"
+                                    <%= user.status === "suspended" ? "selected" : "" %>>
+                                    Suspended</option>
+                                </select>
+                                <button type="submit">Update Status</button>
+                            </form>
+                            <br>
+                            <form
+                                action="/admin/users/<%= user.id %>/delete"
+                                method="POST"
+                                onsubmit="return confirm('Delete this user?');">
+                                <button type="submit" style="background:red;color:white;">Delete User</button>
+                            </form>
+                        </div>
+                        <% }) %>
+                </div>
+                <% } else { %>
+                    <p>No users found.</p>
+                    <% } %>
+        </div>
+    </div>
+</body>
+
+</html>
