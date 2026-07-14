@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <title>Events Finder</title>
+    <style>
+        .form-wrapper {
+            min-height: calc(100vh - 56px);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="container d-flex flex-column align-items-center justify-content-center form-wrapper py-5">
+        <div class="w-100" style="max-width: 600px;">
+            <h2 class="text-center mb-4">Create New Event</h2>
+            
+            <form action="/submitted" method="POST" class="card p-4 shadow-sm bg-white rounded">
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label font-weight-bold">Event Title:</label>
+                    <input type="text" class="form-control" id="name" placeholder="Enter title e.g., Tech Networking Mixer" name="name" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date" class="form-label">Date:</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="time" class="form-label">Time:</label>
+                        <input type="time" class="form-control" id="time" name="time" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="type" class="form-label">Event Type:</label>
+                    <select id="type" name="type" class="form-select">
+                        <option value="networking" selected>Networking</option>
+                        <option value="social">Social/ Party</option>
+                        <option value="arts">Arts</option>
+                        <option value="tech">Tech</option>
+                        <option value="games">Games</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="descriptions" class="form-label">Descriptions:</label>
+                    <textarea class="form-control" id="descriptions" rows="4" placeholder="Provide a brief summary of what attendees can expect during the event" name="descriptions" required></textarea>
+                </div>
+
+                <div class="alert alert-warning text-dark style-sm p-3 mb-4" style="font-size: 0.85rem;">
+                    <strong>⚠️ Notice:</strong> Your event will be submitted as pending. Please do not panic when it does not show up publicly right away; it must be authorized by an administrator first.
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="/entry" class="btn btn-secondary px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4">Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
