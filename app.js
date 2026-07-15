@@ -284,6 +284,40 @@ app.get('/user/map', (req, res) => {
     });
 });
 
+// Get detailed view of an event by ID
+app.get('/events/:id', async (req, res) => {
+    try {
+        const db = getPool();
+        const [rows] = await db.query(
+            `SELECT e.*, u.name as organiser_name 
+             FROM events e 
+             JOIN users u ON e.organiser_id = u.id 
+             WHERE e.id = ?`,
+            [req.params.id]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).render('partials/error', {
+                title: 'Event Not Found',
+                message: 'The event you are looking for does not exist or has been removed.'
+            });
+        }
+        
+        // Render the event.ejs view template with the database results
+        res.render('event', { 
+            title: rows[0].title,
+            event: rows[0],
+            user: req.query.user || 'User'
+        });
+    } catch (error) {
+        console.error('Error rendering event page:', error);
+        res.status(500).render('partials/error', {
+            title: 'Server Error',
+            message: 'Failed to retrieve event details.'
+        });
+    }
+});
+
 app.get('/create', (req, res) => {
     res.redirect('/login?next=/organiser/create-event');
 });
