@@ -31,6 +31,24 @@ app.get('/my-bookings', (req, res) => {
   res.render('my_bookings', { title: 'My Bookings' });
 });
 
+// ADD THIS NEW BLOCK: The Event Details Page Route
+app.get('/events/:id', async (req, res) => {
+  try {
+    // Dynamically load the model to fetch the specific event
+    const eventModel = require('./models/event.model'); 
+    const event = await eventModel.findById(req.params.id);
+    
+    // Render the event.ejs file and inject the database data into it
+    res.render('event', { 
+      title: event ? event.title : 'Event Details', 
+      event: event 
+    });
+  } catch (err) {
+    console.error("Error loading event page:", err);
+    res.render('event', { title: 'Event Not Found', event: null });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/events', eventsRoutes);

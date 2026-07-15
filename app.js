@@ -112,7 +112,85 @@ async function authenticateUser(email, password) {
 // ============================================
 
 // ==================== VIEW ROUTES ====================
+app.get('/my-bookings', (req, res) => {
+    res.render('my_bookings', {
+        title: 'My Bookings',
+        user: req.query.user || 'User'
+    });
+});
 
+// ADD THIS NEW BLOCK: The Event Details Page Route
+app.get('/events/:id', async (req, res) => {
+    try {
+        const db = getPool();
+        const [event] = await db.query(
+            `SELECT e.*, u.name as organiser_name 
+             FROM events e 
+             JOIN users u ON e.organiser_id = u.id 
+             WHERE e.id = ?`,
+            [req.params.id]
+        );
+        
+        if (event.length === 0) {
+            return res.status(404).render('partials/error', {
+                title: 'Event Not Found',
+                message: 'The event you are looking for does not exist.'
+            });
+        }
+        
+        res.render('event', { 
+            title: event[0].title || 'Event Details',
+            event: event[0],
+            user: req.query.user || 'User'
+        });
+    } catch (error) {
+        console.error('Error rendering event page:', error);
+        res.status(500).render('partials/error', {
+            title: 'Server Error',
+            message: 'Something went wrong while loading the event.'
+        });
+    }
+});
+
+app.get('/my-bookings', (req, res) => {
+    res.render('my_bookings', {
+        title: 'My Bookings',
+        user: req.query.user || 'User'
+    });
+});
+
+// ADD THIS NEW BLOCK: The Event Details Page Route
+app.get('/events/:id', async (req, res) => {
+    try {
+        const db = getPool();
+        const [event] = await db.query(
+            `SELECT e.*, u.name as organiser_name 
+             FROM events e 
+             JOIN users u ON e.organiser_id = u.id 
+             WHERE e.id = ?`,
+            [req.params.id]
+        );
+        
+        if (event.length === 0) {
+            return res.status(404).render('partials/error', {
+                title: 'Event Not Found',
+                message: 'The event you are looking for does not exist.'
+            });
+        }
+        
+        res.render('event', { 
+            title: event[0].title || 'Event Details',
+            event: event[0],
+            user: req.query.user || 'User'
+        });
+    } catch (error) {
+        console.error('Error rendering event page:', error);
+        res.status(500).render('partials/error', {
+            title: 'Server Error',
+            message: 'Something went wrong while loading the event.'
+        });
+    }
+});
 // Home - Login Page
 app.get('/', (req, res) => {
     res.render('login', { 
@@ -148,6 +226,7 @@ app.get('/my-bookings', (req, res) => {
         user: req.query.user || 'User'
     });
 });
+
 
 // ==================== POST ROUTES ====================
 
