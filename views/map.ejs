@@ -64,6 +64,7 @@
       markers = [];
     }
 
+    // 1. Corrected popupHtml (Details button only)
     function popupHtml(event) {
       // Re-architected to natively leverage your .badge, .logout-btn, and popup classes from styles.css
       return `
@@ -80,16 +81,24 @@
       `;
     }
 
+    // 2. Corrected checkAvailability (No bookBtn logic)
     async function checkAvailability(eventId, popupEl) {
       const capacityEl = popupEl.querySelector('[data-role="capacity"]');
-      const bookBtn = popupEl.querySelector('[data-role="book"]');
+
+      if (!capacityEl) {
+        console.error("Missing data-role attributes in popup HTML!");
+        return; 
+      }
+
       try {
         const res = await fetch(`/api/events/${eventId}/availability`);
         const json = await res.json();
+        
         if (!json.success) {
           capacityEl.textContent = json.error.message;
           return;
         }
+        
         const { remainingCapacity, capacity } = json.data;
         if (remainingCapacity > 0) {
           capacityEl.textContent = `${remainingCapacity} / ${capacity} spots left`;
@@ -111,42 +120,13 @@
       }
     }
 
-    async function bookEvent(eventId, popupEl) {
-      const token = Auth.getToken();
-      if (!token) {
-        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
-        return;
-      }
-      const ticketCount = Number(prompt('How many tickets?', '1'));
-      if (!ticketCount || ticketCount < 1) return;
-      const res = await fetch('/api/rsvps', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ eventId, ticketCount }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        alert('Booking confirmed!');
-        checkAvailability(eventId, popupEl);
-      } else if (res.status === 401) {
-        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
-      } else {
-        alert(json.error.message);
-      }
-    }
-
+    // 3. Corrected addMarker (No addEventListener for booking)
     function addMarker(event) {
       const marker = L.marker([event.lat, event.lng]).addTo(map);
       marker.bindPopup(popupHtml(event));
       marker.on('popupopen', (e) => {
         const popupEl = e.popup.getElement();
         checkAvailability(event.id, popupEl);
-        popupEl.querySelector('[data-role="book"]').addEventListener('click', () => {
-          bookEvent(event.id, popupEl);
-        });
       });
       markers.push(marker);
     }

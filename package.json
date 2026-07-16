@@ -24,9 +24,11 @@
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
+    "googleapis": "^173.0.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "mysql2": "^3.22.6",
+    "nodemailer": "^9.0.3",
     "parser": "^0.1.4",
     "pg": "^8.22.0"
   },

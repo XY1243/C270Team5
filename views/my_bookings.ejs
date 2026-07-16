@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="topbar bg-white shadow-sm py-4 px-6 flex justify-between items-center sticky top-0 z-10">
+    <a href="/map" class="text-blue-600 font-bold hover:underline text-lg">Event Finder</a>
+    <div class="links" id="authLinks"></div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold">My Bookings</h1>
+        <p class="text-gray-600">Your confirmed RSVP history and calendar sync status.</p>
+      </div>
+      <a href="/map" class="text-blue-600 hover:underline font-medium">Browse events</a>
+    </div>
+
+    <div id="bookingList" class="space-y-4"></div>
+  </main>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    Auth.renderTopbarLinks(document.getElementById('authLinks'));
+
+    async function loadBookings() {
+      const container = document.getElementById('bookingList');
+      container.innerHTML = '<div class="bg-white rounded-lg shadow p-6 text-gray-600">Loading your bookings…</div>';
+
+      try {
+        const token = Auth.getToken();
+        if (!token) {
+          window.location.href = '/login?next=/my-bookings';
+          return;
+        }
+
+        const res = await fetch('/api/rsvps/mine', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        const bookings = json?.data?.rsvps || [];
+
+        if (!bookings.length) {
+          container.innerHTML = '<div class="bg-white rounded-lg shadow p-6 text-gray-600">You have no bookings yet.</div>';
+          return;
+        }
+
+        container.innerHTML = bookings.map((booking) => {
+          const statusClass = booking.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+          const statusText = booking.status === 'cancelled' ? 'Cancelled' : 'Confirmed';
+          const eventTitle = booking.title || 'Event';
+          const eventDate = booking.starts_at ? new Date(booking.starts_at).toLocaleString() : 'TBA';
+          return `
+            <div class="bg-white rounded-lg shadow p-6 flex items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-3 mb-2">
+                  <h2 class="text-xl font-semibold">${eventTitle}</h2>
+                  <span class="px-3 py-1 rounded-full text-sm font-medium ${statusClass}">${statusText}</span>
+                </div>
+                <p class="text-gray-600">${eventDate}</p>
+                <p class="text-gray-500 text-sm">Tickets: ${booking.ticket_count}</p>
+              </div>
+              <div class="text-right text-sm text-gray-500">
+                <p>Booking #${booking.id}</p>
+                ${booking.google_event_id ? '<p class="text-green-600">Calendar synced</p>' : '<p class="text-gray-500">Calendar pending</p>'}
+              </div>
+            </div>`;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div class="bg-white rounded-lg shadow p-6 text-red-600">Could not load your bookings right now.</div>';
+      }
+    }
+
+    loadBookings();
+  </script>
+</body>
+</html>

@@ -186,14 +186,16 @@
       }
     }
 
-    // Confirm Booking Logic
-    confirmRsvpBtn.addEventListener('click', async () => {
+    async function submitBooking() {
       const token = Auth.getToken();
-      const ticketCount = Number(ticketCountSelect.value);
-      
-      // Show Loading State (Spinner)
+      if (!token) {
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+
+      const ticketCount = Number(ticketCountSelect.value || 1);
       confirmRsvpBtn.disabled = true;
-      confirmRsvpBtn.innerHTML = `<svg class="animate-spin h-5 w-5 mx-auto text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+      confirmRsvpBtn.textContent = 'Processing…';
 
       try {
         const res = await fetch('/api/rsvps', {
@@ -205,28 +207,25 @@
           body: JSON.stringify({ eventId, ticketCount }),
         });
         const json = await res.json();
-        
-        // Reset Button State
-        confirmRsvpBtn.disabled = false;
-        confirmRsvpBtn.textContent = 'Confirm Booking';
 
         if (json.success) {
-          // Trigger Success Screen
+          // Hide the form and show the green success checkmark!
           formStep.classList.add('hidden');
           successStep.classList.remove('hidden');
-          checkAvailability(); // Refresh remaining capacity!
-        } else if (res.status === 401) {
-          window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+          checkAvailability();
         } else {
-          alert(json.error.message);
+          alert(json.error?.message || 'Booking could not be completed.');
         }
       } catch (err) {
-        // Handle Network Errors
+        alert('Network error. Please try again.');
+      } finally {
         confirmRsvpBtn.disabled = false;
         confirmRsvpBtn.textContent = 'Confirm Booking';
-        alert('A network error occurred. Please try again.');
       }
-    });
+    }
+
+    // Confirm Booking Logic
+    confirmRsvpBtn.addEventListener('click', submitBooking);
 
     // Add to Google Calendar Logic
     function addToGoogleCalendar() {

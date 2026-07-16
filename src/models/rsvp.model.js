@@ -35,7 +35,7 @@ async function createRsvp({ eventId, userId, ticketCount = 1 }) {
     let insertId;
     try {
       const [result] = await connection.query(
-        'INSERT INTO rsvps (event_id, user_id, ticket_count) VALUES (?, ?, ?)',
+        'INSERT INTO rsvps (event_id, user_id, ticket_count, google_event_id) VALUES (?, ?, ?, NULL)',
         [eventId, userId, ticketCount]
       );
       insertId = result.insertId;
@@ -87,10 +87,37 @@ async function countConfirmedForEvent(eventId) {
   return total;
 }
 
+async function setGoogleEventId(rsvpId, googleEventId) {
+  if (!googleEventId) return null;
+  await pool.query('UPDATE rsvps SET google_event_id = ? WHERE id = ?', [googleEventId, rsvpId]);
+  return true;
+}
+
+async function findByUserAndEvent(userId, eventId) {
+  const [rows] = await pool.query(
+    "SELECT * FROM rsvps WHERE user_id = ? AND event_id = ? ORDER BY id DESC LIMIT 1",
+    [userId, eventId]
+  );
+  return rows[0] || null;
+}
+
+async function getRsvpWithEvent(rsvpId) {
+  const [rows] = await pool.query(
+    `SELECT r.*, e.title, e.description, e.starts_at, e.ends_at, e.venue_name
+     FROM rsvps r JOIN events e ON e.id = r.event_id
+     WHERE r.id = ?`,
+    [rsvpId]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   createRsvp,
   cancelRsvp,
   findById,
   listByUser,
   countConfirmedForEvent,
+  setGoogleEventId,
+  findByUserAndEvent,
+  getRsvpWithEvent,
 };

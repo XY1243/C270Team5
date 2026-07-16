@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(verifyToken);
 router.post('/', controller.createRsvp);
 router.get('/mine', controller.listMine);
+router.get('/by-user-event', controller.getRsvpByUserAndEvent);
 router.delete('/:id', controller.cancelRsvp);
 
 module.exports = router;
