@@ -2,6 +2,7 @@ const eventModel = require('../models/event.model');
 const rsvpModel = require('../models/rsvp.model');
 const { success, fail } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
+const { validateEventTiming, resolvePostalCodeLocation } = require('../utils/eventValidation');
 
 async function loadOwnedEvent(req, res) {
   const event = await eventModel.findById(req.params.id);
@@ -31,11 +32,18 @@ const getEvent = asyncHandler(async (req, res) => {
 });
 
 const createEvent = asyncHandler(async (req, res) => {
-  const { title, description, category, venueName, lat, lng, startsAt, endsAt, capacity } = req.body;
+  const { title, description, category, venueName, postalCode, lat, lng, startsAt, endsAt, capacity } = req.body;
 
   if (!title || !startsAt || capacity === undefined) {
     return fail(res, 400, 'VALIDATION_ERROR', 'title, startsAt, and capacity are required');
   }
+
+  const timing = validateEventTiming({ startsAt, endsAt, now: new Date() });
+  if (!timing.valid) {
+    return fail(res, 400, 'VALIDATION_ERROR', timing.message);
+  }
+
+  const location = resolvePostalCodeLocation(postalCode, lat, lng);
 
   const event = await eventModel.createEvent({
     organiserId: req.user.id,
@@ -43,8 +51,9 @@ const createEvent = asyncHandler(async (req, res) => {
     description,
     category,
     venueName,
-    lat,
-    lng,
+    postalCode,
+    lat: location.lat,
+    lng: location.lng,
     startsAt,
     endsAt,
     capacity,

@@ -6,23 +6,32 @@ const REMAINING_CAPACITY_SQL = `
   ), 0)) AS SIGNED) AS remaining_capacity
 `;
 
+async function ensurePostalCodeColumn() {
+  const [rows] = await pool.query("SHOW COLUMNS FROM events LIKE 'postal_code'");
+  if (rows.length === 0) {
+    await pool.query("ALTER TABLE events ADD COLUMN postal_code VARCHAR(20) DEFAULT NULL AFTER venue_name");
+  }
+}
+
 async function createEvent({
   organiserId,
   title,
   description,
   category,
   venueName,
+  postalCode,
   lat,
   lng,
   startsAt,
   endsAt,
   capacity,
 }) {
+  await ensurePostalCodeColumn();
   const [result] = await pool.query(
     `INSERT INTO events
-      (organiser_id, title, description, category, venue_name, lat, lng, starts_at, ends_at, capacity)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [organiserId, title, description, category, venueName, lat, lng, startsAt, endsAt, capacity]
+      (organiser_id, title, description, category, venue_name, postal_code, lat, lng, starts_at, ends_at, capacity)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [organiserId, title, description, category, venueName, postalCode || null, lat, lng, startsAt, endsAt, capacity]
   );
   return findById(result.insertId);
 }
@@ -76,6 +85,7 @@ async function updateEvent(id, fields) {
     description: 'description',
     category: 'category',
     venueName: 'venue_name',
+    postalCode: 'postal_code',
     lat: 'lat',
     lng: 'lng',
     startsAt: 'starts_at',

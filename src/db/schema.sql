@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS events (
   description TEXT,
   category VARCHAR(100),
   venue_name VARCHAR(255),
+  postal_code VARCHAR(20) DEFAULT NULL,
   lat DECIMAL(10, 7),
   lng DECIMAL(10, 7),
   starts_at DATETIME NOT NULL,

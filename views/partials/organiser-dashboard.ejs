@@ -8,7 +8,7 @@
 <body>
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>🎪 <%= title %></h1>
+            <h1><%= title %></h1>
             <div class="user-info">
                 <span>Welcome, <strong><%= user %></strong></span>
                 <span class="badge"><%= role %></span>
@@ -20,26 +20,51 @@
             <a href="/organiser/dashboard" class="active">Dashboard</a>
             <a href="/organiser/events">My Events</a>
             <a href="/organiser/create-event">Create Event</a>
-            <a href="/user/map">Map</a>
+            <a href="/map">Map</a>
         </div>
         
         <div class="dashboard-content">
-            <h2>Your Events</h2>
+            <div class="hero-panel">
+                <div>
+                    <p class="hero-eyebrow">Organiser workspace</p>
+                    <h2>Manage your events from one place</h2>
+                    <p>Keep track of booking activity, event timing, and venue details without leaving the dashboard.</p>
+                </div>
+                <a href="/organiser/create-event" class="btn btn-primary">Create Event</a>
+            </div>
+
+            <div class="summary-row">
+                <div class="summary-card">
+                    <span class="summary-label">Events</span>
+                    <strong><%= events ? events.length : 0 %></strong>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">RSVPs</span>
+                    <strong><%= events ? events.reduce((sum, event) => sum + Number(event.rsvp_count || 0), 0) : 0 %></strong>
+                </div>
+            </div>
+
+            <h3 class="section-title">Your Events</h3>
             <% if (events && events.length > 0) { %>
                 <div class="card-grid">
                     <% events.forEach(event => { %>
                         <div class="card">
-                            <h3><%= event.title %></h3>
+                            <div class="card-top-row">
+                                <h3><%= event.title %></h3>
+                                <span class="badge"><%= event.status %></span>
+                            </div>
                             <p><%= event.description ? event.description.substring(0, 100) : 'No description' %></p>
-                            <p><strong>Status:</strong> <span class="badge"><%= event.status %></span></p>
                             <p><strong>RSVPs:</strong> <%= event.rsvp_count || 0 %></p>
-                            <p><strong>Date:</strong> <%= new Date(event.starts_at).toLocaleDateString() %></p>
+                            <p><strong>Start:</strong> <%= new Date(event.starts_at).toLocaleString() %></p>
+                            <p><strong>Venue:</strong> <%= event.venue_name || 'TBD' %></p>
                         </div>
                     <% }) %>
                 </div>
             <% } else { %>
-                <p>You haven't created any events yet.</p>
-                <a href="/organiser/create-event" class="btn-login" style="display: inline-block; width: auto; padding: 10px 30px; text-decoration: none;">Create Your First Event</a>
+                <div class="empty-state">
+                    <p>You haven't created any events yet.</p>
+                    <a href="/organiser/create-event" class="btn btn-primary">Create Your First Event</a>
+                </div>
             <% } %>
         </div>
     </div>

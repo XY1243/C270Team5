@@ -108,7 +108,7 @@
 
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>📋 <%= title %></h1>
+            <h1><%= title %></h1>
             <div class="user-info">
                 <span>Welcome, <strong id="navUsername"><%= user %></strong></span>
                 <span class="badge">organiser</span>
@@ -137,19 +137,36 @@
 
                         <div class="form-split-row">
                             <div class="form-split-col">
-                                <label for="date" class="form-label-bold">Date:</label>
+                                <label for="date" class="form-label-bold">Start Date:</label>
                                 <input type="date" class="form-control-custom" id="date" name="date" required>
                             </div>
 
-                            <div class="col-md-6 mb-3 form-split-col">
-                                <label for="time" class="form-label-bold">Time:</label>
+                            <div class="form-split-col">
+                                <label for="time" class="form-label-bold">Start Time:</label>
                                 <input type="time" class="form-control-custom" id="time" name="time" required>
+                            </div>
+                        </div>
+
+                        <div class="form-split-row">
+                            <div class="form-split-col">
+                                <label for="endDate" class="form-label-bold">End Date:</label>
+                                <input type="date" class="form-control-custom" id="endDate" name="endDate">
+                            </div>
+
+                            <div class="form-split-col">
+                                <label for="endTime" class="form-label-bold">End Time:</label>
+                                <input type="time" class="form-control-custom" id="endTime" name="endTime">
                             </div>
                         </div>
 
                         <div class="form-layout-group">
                             <label for="venue" class="form-label-bold">Venue Name:</label>
                             <input type="text" class="form-control-custom" id="venue" name="venue" placeholder="Enter venue name" required>
+                        </div>
+
+                        <div class="form-layout-group">
+                            <label for="postalCode" class="form-label-bold">Postal Code:</label>
+                            <input type="text" class="form-control-custom" id="postalCode" name="postalCode" placeholder="e.g. 018956" maxlength="6">
                         </div>
 
                         <input type="hidden" id="lat" value="1.290270">
@@ -173,7 +190,7 @@
                         </div>
 
                         <div class="alert-warning-box">
-                            <strong>⚠️ Notice:</strong> Your event will be submitted as pending. It must be authorized by an administrator before appearing publicly.
+                            <strong>Notice:</strong> Your event will be submitted as pending. It must be authorized by an administrator before appearing publicly.
                         </div>
 
                         <div id="formError" class="alert-danger-box d-hidden"></div>
@@ -195,6 +212,10 @@
       const errorBox = document.getElementById('formError');
       const cancelLink = document.getElementById('cancelLink');
       const logoutBtn = document.getElementById('logoutBtn');
+      const startDateInput = document.getElementById('date');
+      const startTimeInput = document.getElementById('time');
+      const endDateInput = document.getElementById('endDate');
+      const endTimeInput = document.getElementById('endTime');
       
       const user = Auth.getUser();
       if (!user || (user.role !== 'organiser' && user.role !== 'admin')) {
@@ -215,6 +236,32 @@
         });
       }
 
+      const today = new Date().toISOString().split('T')[0];
+      if (startDateInput) startDateInput.min = today;
+      if (endDateInput) endDateInput.min = today;
+
+      function updateTimeConstraints() {
+        const isToday = startDateInput && startDateInput.value === today;
+        if (startTimeInput) {
+          startTimeInput.min = isToday ? new Date().toTimeString().slice(0, 5) : '';
+        }
+        if (endTimeInput) {
+          endTimeInput.min = isToday ? new Date().toTimeString().slice(0, 5) : '';
+        }
+      }
+
+      if (startDateInput) {
+        startDateInput.addEventListener('change', updateTimeConstraints);
+      }
+      if (startTimeInput) {
+        startTimeInput.addEventListener('change', () => {
+          if (endTimeInput && endTimeInput.value && startTimeInput.value > endTimeInput.value) {
+            endTimeInput.value = '';
+          }
+        });
+      }
+      updateTimeConstraints();
+
       function showError(message) {
         errorBox.textContent = message;
         errorBox.classList.remove('d-hidden');
@@ -233,7 +280,10 @@
         const title = document.getElementById('title').value.trim();
         const date = document.getElementById('date').value;
         const time = document.getElementById('time').value;
+        const endDate = document.getElementById('endDate').value;
+        const endTime = document.getElementById('endTime').value;
         const venueName = document.getElementById('venue').value.trim();
+        const postalCode = document.getElementById('postalCode').value.trim();
         const lat = parseFloat(document.getElementById('lat').value);
         const lng = parseFloat(document.getElementById('lng').value);
         const capacity = Number(document.getElementById('capacity').value);
@@ -246,6 +296,7 @@
         }
 
         const startsAt = `${date}T${time}:00`;
+        const endsAt = endDate && endTime ? `${endDate}T${endTime}:00` : null;
         const response = await fetch('/api/events', {
           method: 'POST',
           headers: {
@@ -257,9 +308,11 @@
             description,
             category,
             venueName,
+            postalCode,
             lat,
             lng,
             startsAt,
+            endsAt,
             capacity,
           }),
         });

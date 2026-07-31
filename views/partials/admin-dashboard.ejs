@@ -8,7 +8,7 @@
 <body>
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>⚙️ <%= title %></h1>
+            <h1><%= title %></h1>
             <div class="user-info">
                 <span>Welcome, <strong><%= user %></strong></span>
                 <span class="badge"><%= role %></span>
@@ -23,52 +23,67 @@
         </div>
         
         <div class="dashboard-content">
-            <h2>Overview</h2>
-            <div class="card-grid">
-                <div class="card">
-                    <h3>Total Users</h3>
-                    <div class="number"><%= stats.users %></div>
+            <div class="hero-panel">
+                <div>
+                    <p class="hero-eyebrow">Administration</p>
+                    <h2>Monitor platform activity at a glance</h2>
+                    <p>Review users, events, and pending approvals from a single control panel.</p>
                 </div>
-                <div class="card">
-                    <h3>Total Events</h3>
-                    <div class="number"><%= stats.events %></div>
+            </div>
+
+            <div class="summary-row">
+                <div class="summary-card">
+                    <span class="summary-label">Total Users</span>
+                    <strong><%= stats.users %></strong>
                 </div>
-                <div class="card" style="border-left-color: #f39c12;">
-                    <h3>Pending Events</h3>
-                    <div class="number" style="color: #f39c12;"><%= stats.pending %></div>
+                <div class="summary-card">
+                    <span class="summary-label">Total Events</span>
+                    <strong><%= stats.events %></strong>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">Pending Events</span>
+                    <strong><%= stats.pending %></strong>
                 </div>
             </div>
             
-            <h2 style="margin-top: 30px;">Recent Users</h2>
+            <h3 class="section-title">Recent Users</h3>
             <% if (recentUsers && recentUsers.length > 0) { %>
                 <div class="card-grid">
                     <% recentUsers.forEach(user => { %>
                         <div class="card">
-                            <h3><%= user.name %></h3>
+                            <div class="card-top-row">
+                                <h3><%= user.name %></h3>
+                                <span class="badge"><%= user.role %></span>
+                            </div>
                             <p><%= user.email %></p>
-                            <p><strong>Role:</strong> <span class="badge"><%= user.role %></span></p>
                             <p><strong>Status:</strong> <span class="badge"><%= user.status %></span></p>
                         </div>
                     <% }) %>
                 </div>
             <% } else { %>
-                <p>No users found.</p>
+                <div class="empty-state">
+                    <p>No users found.</p>
+                </div>
             <% } %>
             
-            <h2 style="margin-top: 30px;">Recent Events</h2>
+            <h3 class="section-title">Recent Events</h3>
             <% if (recentEvents && recentEvents.length > 0) { %>
                 <div class="card-grid">
                     <% recentEvents.forEach(event => { %>
                         <div class="card">
-                            <h3><%= event.title %></h3>
+                            <div class="card-top-row">
+                                <h3><%= event.title %></h3>
+                                <span class="badge"><%= event.status %></span>
+                            </div>
                             <p><strong>Organiser:</strong> <%= event.organiser_name %></p>
-                            <p><strong>Status:</strong> <span class="badge"><%= event.status %></span></p>
                             <p><strong>Date:</strong> <%= new Date(event.starts_at).toLocaleDateString() %></p>
                         </div>
                     <% }) %>
                 </div>
             <% } else { %>
-                <p>No events found.</p>
+                <div class="empty-state">
+                    <p>No events found.</p>
+                </div>
             <% } %>
         </div>
     </div>
