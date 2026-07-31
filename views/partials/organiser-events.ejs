@@ -8,7 +8,7 @@
 <body>
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>📋 <%= title %></h1>
+            <h1><%= title %></h1>
             <div class="user-info">
                 <span>Welcome, <strong><%= user %></strong></span>
                 <span class="badge">organiser</span>
@@ -20,26 +20,37 @@
             <a href="/organiser/dashboard">Dashboard</a>
             <a href="/organiser/events" class="active">My Events</a>
             <a href="/organiser/create-event">Create Event</a>
-            <a href="/user/map">Map</a>
+            <a href="/map">Map</a>
         </div>
         
         <div class="dashboard-content">
-            <h2>All Your Events</h2>
+            <div class="hero-panel compact">
+                <div>
+                    <p class="hero-eyebrow">My events</p>
+                    <h2>Review and manage every event you have created</h2>
+                </div>
+            </div>
+
             <% if (events && events.length > 0) { %>
                 <div class="card-grid">
                     <% events.forEach(event => { %>
                         <div class="card">
-                            <h3><%= event.title %></h3>
+                            <div class="card-top-row">
+                                <h3><%= event.title %></h3>
+                                <span class="badge"><%= event.status %></span>
+                            </div>
                             <p><%= event.description ? event.description.substring(0, 150) : 'No description' %></p>
-                            <p><strong>Status:</strong> <span class="badge"><%= event.status %></span></p>
                             <p><strong>RSVPs:</strong> <%= event.rsvp_count || 0 %></p>
-                            <p><strong>Date:</strong> <%= new Date(event.starts_at).toLocaleDateString() %></p>
+                            <p><strong>Start:</strong> <%= new Date(event.starts_at).toLocaleString() %></p>
+                            <p><strong>Ends:</strong> <%= event.ends_at ? new Date(event.ends_at).toLocaleString() : 'TBD' %></p>
                             <p><strong>Venue:</strong> <%= event.venue_name || 'TBD' %></p>
                         </div>
                     <% }) %>
                 </div>
             <% } else { %>
-                <p>You haven't created any events yet.</p>
+                <div class="empty-state">
+                    <p>You haven't created any events yet.</p>
+                </div>
             <% } %>
         </div>
     </div>

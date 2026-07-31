@@ -8,10 +8,10 @@
 <body>
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>📅 <%= title %></h1>
+            <h1><%= title %></h1>
             <div class="user-info">
                 <span>Welcome, <strong><%= user %></strong></span>
-                <span class="badge">user</span>
+                <span class="badge"><%= role %></span>
                 <a href="/" class="logout-btn">Logout</a>
             </div>
         </div>
@@ -23,12 +23,21 @@
         </div>
         
         <div class="dashboard-content">
-            <h2>All Events</h2>
+            <div class="hero-panel compact">
+                <div>
+                    <p class="hero-eyebrow">Browse events</p>
+                    <h2>Discover the latest public events</h2>
+                </div>
+            </div>
+
             <% if (events && events.length > 0) { %>
                 <div class="card-grid">
                     <% events.forEach(event => { %>
                         <div class="card">
-                            <h3><%= event.title %></h3>
+                            <div class="card-top-row">
+                                <h3><%= event.title %></h3>
+                                <span class="badge">Open</span>
+                            </div>
                             <p><%= event.description ? event.description.substring(0, 150) : 'No description' %></p>
                             <p><strong>Organiser:</strong> <%= event.organiser_name %></p>
                             <p><strong>Category:</strong> <%= event.category || 'General' %></p>
@@ -39,7 +48,9 @@
                     <% }) %>
                 </div>
             <% } else { %>
-                <p>No events available.</p>
+                <div class="empty-state">
+                    <p>No events available.</p>
+                </div>
             <% } %>
         </div>
     </div>

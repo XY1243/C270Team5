@@ -8,7 +8,7 @@
 <body>
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>📋 <%= title %></h1>
+            <h1><%= title %></h1>
             <div class="user-info">
                 <span>Welcome, <strong><%= user %></strong></span>
                 <span class="badge">admin</span>
@@ -41,14 +41,14 @@
                             <form action="/admin/events/<%= event.id %>/status" method="POST" style="display:inline;">
                                 <input type="hidden" name="status" value="approved">
                                 <button type="submit" style="background:green;color:white;">
-                                    ✓ Approve
+                                    Approve
                                 </button>
                             </form>
                             
                             <form action="/admin/events/<%= event.id %>/status" method="POST" style="display:inline;">
                                 <input type="hidden" name="status" value="rejected">
                                 <button type="submit" style="background:red;color:white;">
-                                    ✗ Reject
+                                    Reject
                                 </button>
                             </form>
                             
