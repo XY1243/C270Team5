@@ -1,0 +1,26 @@
+---
+- name: Ensure the application directory exists
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Clone or update the application repository
+  ansible.builtin.git:
+    repo: "{{ app_repo_url }}"
+    dest: "{{ app_dir }}"
+    version: "{{ app_repo_branch }}"
+    force: true
+
+- name: Deploy the .env file used by docker compose
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Build and start the application containers
+  ansible.builtin.command: docker compose up -d --build
+  args:
+    chdir: "{{ app_dir }}"

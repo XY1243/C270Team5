@@ -1,0 +1,26 @@
+---
+# Provisions raw AWS EC2 instances end-to-end:
+#   1. Baseline OS hardening/config on every host
+#   2. Docker Engine on hosts that need to build/run containers
+#   3. Jenkins agent registration on the CI build hosts
+#   4. Application deployment via docker compose on the app hosts
+
+- name: Baseline configuration for all EC2 instances
+  hosts: all
+  become: true
+  roles:
+    - common
+
+- name: Configure Jenkins build agents
+  hosts: jenkins_agents
+  become: true
+  roles:
+    - docker
+    - jenkins_agent
+
+- name: Configure and deploy the application servers
+  hosts: app_servers
+  become: true
+  roles:
+    - docker
+    - app_deploy

@@ -1,0 +1,22 @@
+---
+app_dir: /opt/wenroucopy
+app_repo_url: "https://github.com/YOUR_ORG/C270Team5.git"
+app_repo_branch: main
+
+# Non-secret application settings; secret values live in group_vars/app_servers/vault.yml
+# Create that file with:
+#   ansible-vault create group_vars/app_servers/vault.yml
+# using group_vars/app_servers/vault.yml.example as a template.
+node_env: production
+db_name: event_finder
+db_user: root
+db_port: 3306
+jwt_expires_in: 7d
+upload_dir: uploads/banners
+max_upload_size_mb: 5
+cors_origin: "*"
+smtp_host: smtp.gmail.com
+smtp_port: 587
+smtp_secure: "false"
+mail_from: "EventFinder <noreply@eventfinder.local>"
+google_redirect_uri: "http://13.211.77.16:3000/api/auth/google-calendar/callback"
