@@ -12,18 +12,30 @@ pipeline {
         stage('2. Build Docker Image') {
             steps {
                 echo 'Building Docker container...'
-                sh 'docker build -t node-app .'
+                sh 'docker build -t node-app:latest .'
             }
         }
 
-        stage('3. Run Tests') {
+        stage('3. Security Scan (Trivy)') {
+            steps {
+                echo 'Running Trivy Vulnerability Scan...'
+                sh '''
+                trivy image \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                node-app:latest
+                '''
+            }
+        }
+
+        stage('4. Run Tests') {
             steps {
                 echo 'Running automated tests inside container...'
-                sh 'docker run --rm node-app echo "All tests passed successfully!"'
+                sh 'docker run --rm node-app:latest echo "All tests passed successfully!"'
             }
         }
 
-        stage('4. Ansible Deployment') {
+        stage('5. Ansible Deployment') {
             steps {
                 echo 'Executing Ansible Playbook...'
                 /* Runs site.yml inside your ansible directory */
