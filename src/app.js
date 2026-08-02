@@ -2,7 +2,6 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const env = require('./config/env') || {};
-const env = require('./config/env') || {};
 
 const authRoutes = require('./routes/auth.routes');
 const usersRoutes = require('./routes/users.routes');
@@ -22,9 +21,6 @@ app.set('views', path.resolve(__dirname, '..', 'views'));
 app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json());
 app.use(express.static(path.resolve(__dirname, '..', 'public')));
-
-app.use(cors({ origin: env.corsOrigin }));
-app.use(express.json());
 app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
 
 app.get('/my-bookings', (req, res) => {
