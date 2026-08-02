@@ -1,0 +1,29 @@
+apiVersion: v1
+data:
+  CORS_ORIGIN: '*'
+  DB_HOST: localhost
+  DB_NAME: event_finder
+  DB_PASSWORD: Republic_C207
+  DB_PORT: "3306"
+  DB_USER: root
+  GOOGLE_CALENDAR_TIMEZONE: UTC
+  GOOGLE_CLIENT_ID: your-google-oauth-client-id
+  GOOGLE_CLIENT_SECRET: your-google-oauth-client-secret
+  GOOGLE_REDIRECT_URI: http://localhost:3000/api/auth/google-calendar/callback
+  JWT_EXPIRES_IN: 7d
+  JWT_SECRET: change-me-to-a-long-random-string
+  MAIL_FROM: EventFinder <noreply@eventfinder.local>
+  MAX_UPLOAD_SIZE_MB: "5"
+  NODE_ENV: development
+  PORT: "3000"
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PASS: your-app-password-or-api-key
+  SMTP_PORT: "587"
+  SMTP_SECURE: "false"
+  SMTP_USER: your-sending-email@gmail.com
+  UPLOAD_DIR: uploads/banners
+kind: ConfigMap
+metadata:
+  labels:
+    io.kompose.service: app-env
+  name: env
