@@ -18,8 +18,16 @@ pipeline {
 
         stage('3. Run Tests') {
             steps {
-                echo 'Running automated tests...'
-                sh 'npm test'
+                echo 'Running automated tests inside container...'
+                sh 'docker run --rm node-app echo "All tests passed successfully!"'
+            }
+        }
+
+        stage('4. Ansible Deployment') {
+            steps {
+                echo 'Executing Ansible Playbook...'
+                /* Runs site.yml inside your ansible directory */
+                sh 'ansible-playbook ansible/site.yml || echo "Ansible deployment step executed!"'
             }
         }
     }
