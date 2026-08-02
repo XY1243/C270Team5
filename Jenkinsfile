@@ -12,14 +12,14 @@ pipeline {
         stage('2. Build Docker Image') {
             steps {
                 echo 'Building Docker container...'
-               sh 'docker build -t node-app .'
+                sh 'docker build -t node-app .'
             }
         }
 
         stage('3. Run Tests') {
             steps {
-                echo 'Running automated tests...'
-                sh 'npm test'
+                echo 'Running automated tests inside container...'
+                sh 'docker run --rm node-app npm test'
             }
         }
     }
