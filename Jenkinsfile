@@ -24,7 +24,7 @@ pipeline {
             }
         }
 
-       stage('5. Ansible Deployment') {
+        stage('5. Ansible Deployment') {
             steps {
                 echo 'Executing Ansible Playbook via Docker...'
                 sh '''
@@ -37,6 +37,7 @@ pipeline {
                 '''
             }
         }
+    }
 
     post {
         success {
