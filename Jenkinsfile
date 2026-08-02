@@ -37,6 +37,7 @@ pipeline {
                 '''
             }
         }
+    }
 
     post {
         success {
