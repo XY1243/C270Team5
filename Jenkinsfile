@@ -33,7 +33,9 @@ pipeline {
                 -v $(pwd):/workspace \
                 -w /workspace \
                 willhallonline/ansible:latest \
-                ansible-playbook ansible/deploy.yml --connection=local
+                ansible-playbook ansible/deploy.yml \
+                -i ansible/inventory/hosts.ini \
+                --connection=local
                 '''
             }
         }
