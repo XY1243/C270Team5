@@ -1,0 +1,14 @@
+[Unit]
+Description=Jenkins Build Agent
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+User=jenkins
+WorkingDirectory=/home/jenkins
+ExecStart=/usr/bin/java -jar /home/jenkins/agent.jar -url {{ jenkins_url }} -secret {{ jenkins_agent_secret }} -name {{ jenkins_agent_name }} -workDir /home/jenkins/agent
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

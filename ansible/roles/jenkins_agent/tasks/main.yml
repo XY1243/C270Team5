@@ -1,0 +1,52 @@
+---
+- name: Install Java runtime required by the Jenkins agent
+  ansible.builtin.apt:
+    name: openjdk-17-jre-headless
+    state: present
+    update_cache: true
+
+- name: Create the jenkins system group
+  ansible.builtin.group:
+    name: jenkins
+    system: true
+
+- name: Create the jenkins system user
+  ansible.builtin.user:
+    name: jenkins
+    group: jenkins
+    groups: docker
+    append: true
+    system: true
+    shell: /bin/bash
+    home: /home/jenkins
+    create_home: true
+
+- name: Create the agent working directory
+  ansible.builtin.file:
+    path: /home/jenkins/agent
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+- name: Download the agent.jar from the Jenkins controller
+  ansible.builtin.get_url:
+    url: "{{ jenkins_url }}/jnlpJars/agent.jar"
+    dest: /home/jenkins/agent.jar
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+
+- name: Deploy the systemd unit for the Jenkins agent
+  ansible.builtin.template:
+    src: jenkins-agent.service.j2
+    dest: /etc/systemd/system/jenkins-agent.service
+    mode: '0644'
+  notify: restart jenkins-agent
+
+- name: Enable and start the jenkins-agent service
+  ansible.builtin.systemd:
+    name: jenkins-agent
+    enabled: true
+    state: started
+    daemon_reload: true

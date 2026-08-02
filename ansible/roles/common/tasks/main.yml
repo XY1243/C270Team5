@@ -1,0 +1,54 @@
+---
+- name: Update apt package cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade all packages to their latest version
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Install baseline utility packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - curl
+      - unzip
+      - ufw
+      - python3-pip
+      - vim
+    state: present
+
+- name: Set server timezone
+  community.general.timezone:
+    name: "{{ server_timezone }}"
+
+- name: Allow SSH through the firewall
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Allow HTTP through the firewall
+  community.general.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+
+- name: Allow the application port through the firewall
+  community.general.ufw:
+    rule: allow
+    port: "{{ app_port | string }}"
+    proto: tcp
+
+- name: Allow the Jenkins web UI port through the firewall
+  community.general.ufw:
+    rule: allow
+    port: '8080'
+    proto: tcp
+  when: "'jenkins_agents' in group_names"
+
+- name: Enable the firewall with a default deny policy
+  community.general.ufw:
+    state: enabled
+    policy: deny
