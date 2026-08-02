@@ -5,6 +5,7 @@ pipeline {
         stage('1. Checkout Code') {
             steps {
                 echo 'Pulling code from GitHub...'
+                deleteDir()
                 checkout scm
             }
         }
@@ -26,8 +27,7 @@ pipeline {
         stage('4. Ansible Deployment') {
             steps {
                 echo 'Executing Ansible Playbook...'
-                /* Runs site.yml inside your ansible directory */
-                sh 'ansible-playbook ansible/site.yml || echo "Ansible deployment step executed!"'
+                sh 'ansible-playbook ansible/deploy.yml || echo "Ansible deployment step executed!"'
             }
         }
     }
