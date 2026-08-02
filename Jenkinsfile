@@ -24,20 +24,19 @@ pipeline {
             }
         }
 
-        stage('5. Ansible Deployment') {
+       stage('5. Ansible Deployment') {
             steps {
                 echo 'Executing Ansible Playbook via Docker...'
                 sh '''
                 docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v $(pwd):/workspace \
-                -w /workspace/ansible \
+                -w /workspace \
                 willhallonline/ansible:latest \
-                ansible-playbook deploy.yml --connection=local
+                ansible-playbook ansible/deploy.yml --connection=local
                 '''
             }
         }
-    }
 
     post {
         success {
