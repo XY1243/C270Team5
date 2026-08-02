@@ -18,9 +18,11 @@ pipeline {
 
         stage('3. Security Scan (Trivy)') {
             steps {
-                echo 'Running Trivy Vulnerability Scan...'
+                echo 'Running Trivy Vulnerability Scan via Docker...'
                 sh '''
-                trivy image \
+                docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy:latest image \
                 --exit-code 1 \
                 --severity HIGH,CRITICAL \
                 node-app:latest
