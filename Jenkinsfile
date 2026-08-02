@@ -5,6 +5,7 @@ pipeline {
         stage('1. Checkout Code') {
             steps {
                 echo 'Pulling code from GitHub...'
+                deleteDir()
                 checkout scm
             }
         }
