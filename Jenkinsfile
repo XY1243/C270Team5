@@ -31,9 +31,9 @@ pipeline {
                 docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v $(pwd):/workspace \
-                -w /workspace/ansible \
+                -w /workspace \
                 willhallonline/ansible:latest \
-                ansible-playbook deploy.yml --connection=local
+                ansible-playbook ansible/deploy.yml -i ansible/inventory/hosts.ini --connection=local
                 '''
             }
         }
