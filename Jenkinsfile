@@ -19,13 +19,6 @@ pipeline {
         stage('3. Run Tests') {
             steps {
                 echo 'Running automated tests inside container...'
-                sh 'docker run --rm node-app echo "All tests passed successfully!"'
-            }
-        }
-
-        stage('4. Run Tests') {
-            steps {
-                echo 'Running automated tests inside container...'
                 sh 'docker run --rm node-app:latest echo "All tests passed successfully!"'
             }
         }
@@ -43,6 +36,7 @@ pipeline {
                 '''
             }
         }
+    }
 
     post {
         success {
