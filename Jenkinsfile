@@ -30,13 +30,12 @@ pipeline {
                 docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v $(pwd):/workspace \
-                -w /workspace \
+                -w /workspace/ansible \
                 willhallonline/ansible:latest \
-                ansible-playbook ansible/deploy.yml --connection=local
+                ansible-playbook deploy.yml --connection=local
                 '''
             }
         }
-    }
 
     post {
         success {
