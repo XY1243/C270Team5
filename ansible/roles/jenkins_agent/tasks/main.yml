@@ -5,6 +5,12 @@
     state: present
     update_cache: true
 
+- name: Install Ansible so the Jenkinsfile can run ansible/deploy.yml locally
+  ansible.builtin.apt:
+    name: ansible
+    state: present
+    update_cache: true
+
 - name: Create the jenkins system group
   ansible.builtin.group:
     name: jenkins
@@ -20,6 +26,13 @@
     shell: /bin/bash
     home: /home/jenkins
     create_home: true
+
+- name: Allow the jenkins user passwordless sudo (needed for become in the deploy.yml CI run)
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/jenkins-agent
+    content: "jenkins ALL=(ALL) NOPASSWD:ALL\n"
+    mode: '0440'
+    validate: 'visudo -cf %s'
 
 - name: Create the agent working directory
   ansible.builtin.file:
