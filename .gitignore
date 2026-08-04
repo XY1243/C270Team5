@@ -15,6 +15,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Ansible secrets - never commit real vaults
-ansible/group_vars/app_servers/vault.yml
+# Ansible secrets - only the ENCRYPTED vault.yml should ever be committed
+# (ansible-vault encrypt turns it into ciphertext safe for git; never commit it in plaintext)
 ansible/*.retry

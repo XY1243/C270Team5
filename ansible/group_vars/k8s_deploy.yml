@@ -1,0 +1,10 @@
+---
+# Fill these in with your real EKS/ECR details before running k8s-deploy.yml.
+# Secrets (db_password, jwt_secret, google_client_id/secret, smtp_user/pass) are
+# reused from group_vars/app_servers/vault.yml since aws-server-1 belongs to both groups.
+aws_region: "CHANGE_ME"          # e.g. ap-southeast-2
+eks_cluster_name: "CHANGE_ME"    # `aws eks list-clusters` to find it
+ecr_registry: "CHANGE_ME.dkr.ecr.CHANGE_ME.amazonaws.com"
+ecr_repository: "event-finder-app"
+image_tag: "latest"              # overridden per-build by Jenkins: -e image_tag=$BUILD_NUMBER
+k8s_namespace: "default"

@@ -26,6 +26,8 @@ spec:
         - envFrom:
             - configMapRef:
                 name: env
+            - secretRef:
+                name: app-secrets
           image: app
           name: app
           ports:
