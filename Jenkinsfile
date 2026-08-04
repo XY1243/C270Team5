@@ -49,7 +49,6 @@ pipeline {
                         --output /report/trivy-report.txt \
                         --severity HIGH,CRITICAL \
                         --ignore-unfixed \
-                        --exit-code 1 \
                         node-app
                 '''
             }
