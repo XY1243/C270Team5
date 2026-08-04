@@ -54,7 +54,8 @@ SQL are auto-loaded on first boot). The app is reachable on `http://localhost:30
 ## CI/CD
 
 - **Jenkins** ([Jenkinsfile](Jenkinsfile)): checkout -> `docker build` -> run
-  tests inside the built image. Owned by another team member.
+  tests inside the built image -> Trivy vulnerability scan of the image
+  (fails the build on HIGH/CRITICAL fixable CVEs). Owned by another team member.
 - **Ansible** ([ansible/](ansible/README.md)): provisions the AWS EC2 host
   (Docker, firewall, Jenkins agent) and deploys the app via `docker compose`.
   `ansible/deploy.yml` is ready to be called as a Jenkins deploy stage — see

@@ -1,0 +1,9 @@
+---
+# CI/CD deploy-only playbook for the EKS cluster, run by Jenkins after the image is
+# built and pushed to ECR. Assumes site.yml has already provisioned the box once,
+# and that an EKS cluster already exists (this does not create the cluster).
+- name: Deploy application to Kubernetes (EKS)
+  hosts: k8s_deploy
+  become: true
+  roles:
+    - k8s_deploy
