@@ -1,0 +1,26 @@
+apiVersion: v1
+data:
+  CORS_ORIGIN: '*'
+  # Must match the db Service name below, not localhost - app and db run in separate pods.
+  DB_HOST: db
+  DB_NAME: event_finder
+  DB_PORT: "3306"
+  DB_USER: root
+  GOOGLE_CALENDAR_TIMEZONE: UTC
+  GOOGLE_REDIRECT_URI: http://localhost:3000/api/auth/google-calendar/callback
+  JWT_EXPIRES_IN: 7d
+  MAIL_FROM: EventFinder <noreply@eventfinder.local>
+  MAX_UPLOAD_SIZE_MB: "5"
+  NODE_ENV: development
+  PORT: "3000"
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: "587"
+  SMTP_SECURE: "false"
+  UPLOAD_DIR: uploads/banners
+  # DB_PASSWORD, JWT_SECRET, GOOGLE_CLIENT_ID/SECRET, SMTP_USER/PASS live in the
+  # app-secrets Secret (applied by ansible/roles/k8s_deploy), not here.
+kind: ConfigMap
+metadata:
+  labels:
+    io.kompose.service: app-env
+  name: env

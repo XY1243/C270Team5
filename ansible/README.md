@@ -90,3 +90,43 @@ that file into the Jenkins workspace and archives it as a build artifact, so
 the compose logs for every deploy are downloadable from the build page
 without needing to SSH in.
 
+## Kubernetes (EKS) deployment
+
+If you deploy to an existing EKS cluster instead of (or alongside) the
+docker-compose host, use `k8s-deploy.yml` — it applies the Kubernetes
+manifests at the repo root (`app-deployment.yaml`, `db-deployment.yaml`,
+Services, ConfigMaps, PVCs — originally generated from `docker-compose.yml`
+via `kompose`).
+
+```
+roles/k8s_deploy/   # installs awscli/kubectl, updates kubeconfig for the EKS
+                     # cluster, applies the root-level k8s manifests, creates
+                     # the app-secrets Secret from vault vars, and points the
+                     # app Deployment at the image pushed to ECR
+k8s-deploy.yml       # playbook: hosts the k8s_deploy inventory group
+```
+
+Setup:
+
+1. Install the `kubernetes.core` collection along with the rest of
+   `requirements.yml` (`ansible-galaxy collection install -r requirements.yml`)
+   — run this on whichever box executes `k8s-deploy.yml` (the Jenkins agent,
+   for `--connection=local` runs).
+2. Fill in [group_vars/k8s_deploy.yml](group_vars/k8s_deploy.yml) with your
+   real `aws_region`, `eks_cluster_name`, `ecr_registry`, `ecr_repository`.
+   Sensitive values (`db_password`, `jwt_secret`, `google_client_id/secret`,
+   `smtp_user/pass`) are reused from `group_vars/app_servers/vault.yml`
+   since `aws-server-1` belongs to both groups — no separate vault needed.
+3. The instance/role running this playbook needs IAM permissions for
+   `eks:DescribeCluster` and must be mapped in the cluster's `aws-auth`
+   ConfigMap/access entries so `kubectl` can authenticate.
+4. Build and push the app image to ECR first (see the Jenkinsfile's
+   `Push Image to ECR` stage), then run:
+   ```
+   ansible-playbook k8s-deploy.yml --connection=local --limit aws-server-1 \
+     --vault-password-file "$VAULT_PASS_FILE" -e image_tag=<tag>
+   ```
+
+The Jenkinsfile's `DEPLOY_TARGET` parameter picks between the docker-compose
+path (`deploy.yml`) and this Kubernetes path (`k8s-deploy.yml`) per build.
+

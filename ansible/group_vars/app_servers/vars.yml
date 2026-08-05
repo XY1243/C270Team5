@@ -1,6 +1,6 @@
 ---
 app_dir: /opt/wenroucopy
-app_repo_url: "https://github.com/YOUR_ORG/C270Team5.git"
+app_repo_url: "https://github.com/XY1243/C270Team5.git"
 app_repo_branch: main
 
 # Non-secret application settings; secret values live in group_vars/app_servers/vault.yml

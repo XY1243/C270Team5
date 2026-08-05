@@ -1,0 +1,99 @@
+---
+- name: Install AWS CLI (needed to fetch EKS cluster credentials)
+  ansible.builtin.apt:
+    name: awscli
+    state: present
+    update_cache: true
+
+- name: Add the Kubernetes apt signing key
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
+    dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+    mode: '0644'
+
+- name: Add the Kubernetes apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+    state: present
+    filename: kubernetes
+
+- name: Install kubectl
+  ansible.builtin.apt:
+    name: kubectl
+    state: present
+    update_cache: true
+
+- name: Clone or update the application repository (source of the k8s manifests)
+  ansible.builtin.git:
+    repo: "{{ app_repo_url }}"
+    dest: "{{ app_dir }}"
+    version: "{{ app_repo_branch }}"
+    force: true
+
+- name: Point kubectl at the EKS cluster
+  ansible.builtin.command: >
+    aws eks update-kubeconfig --region {{ aws_region }} --name {{ eks_cluster_name }}
+  changed_when: true
+
+- name: Ensure the target namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ k8s_namespace }}"
+  when: k8s_namespace != 'default'
+
+- name: Apply the storage, config and database manifests
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ k8s_namespace }}"
+    src: "{{ app_dir }}/{{ item }}"
+  loop:
+    - db-data-persistentvolumeclaim.yaml
+    - uploads-persistentvolumeclaim.yaml
+    - db-cm1-configmap.yaml
+    - db-cm2-configmap.yaml
+    - env-configmap.yaml
+    - db-deployment.yaml
+    - db-service.yaml
+
+- name: Apply the app-secrets Secret (sensitive env vars, kept out of git)
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ k8s_namespace }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: app-secrets
+        labels:
+          io.kompose.service: app-env
+      stringData:
+        DB_PASSWORD: "{{ db_password }}"
+        JWT_SECRET: "{{ jwt_secret }}"
+        GOOGLE_CLIENT_ID: "{{ google_client_id }}"
+        GOOGLE_CLIENT_SECRET: "{{ google_client_secret }}"
+        SMTP_USER: "{{ smtp_user }}"
+        SMTP_PASS: "{{ smtp_pass }}"
+
+- name: Apply the app Deployment and Service
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ k8s_namespace }}"
+    src: "{{ app_dir }}/{{ item }}"
+  loop:
+    - app-deployment.yaml
+    - app-service.yaml
+
+- name: Point the app Deployment at the freshly built/pushed image
+  ansible.builtin.command: >
+    kubectl set image deployment/app app={{ ecr_registry }}/{{ ecr_repository }}:{{ image_tag }}
+    -n {{ k8s_namespace }}
+  changed_when: true
+
+- name: Wait for the app rollout to finish
+  ansible.builtin.command: kubectl rollout status deployment/app -n {{ k8s_namespace }} --timeout=180s
+  changed_when: false
