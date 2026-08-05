@@ -1,7 +1,8 @@
 pipeline {
-    // The all-in-one EC2 box is both the Jenkins agent and the app server,
-    // so the Ansible --connection=local deploy step below only works here.
-    agent { label 'aws-ec2-agent-1' }
+    // Jenkins only has the Built-In Node registered, which runs inside the
+    // jenkins/jenkins:lts container (not on the app server's own filesystem) -
+    // the Ansible deploy stages below connect to the app server over real SSH.
+    agent any
 
     parameters {
         choice(name: 'DEPLOY_TARGET', choices: ['kubernetes', 'compose'], description: 'Where should this build be deployed?')
@@ -9,6 +10,7 @@ pipeline {
 
     environment {
         APP_DIR = '/opt/wenroucopy' // must match ansible/group_vars/app_servers/vars.yml app_dir
+        APP_HOST = '3.105.110.74' // must match ansible/inventory/hosts.ini ansible_host
         // TODO: fill in your real AWS/ECR details (must match ansible/group_vars/k8s_deploy.yml)
         AWS_REGION = 'CHANGE_ME'
         ECR_REGISTRY = 'CHANGE_ME.dkr.ecr.CHANGE_ME.amazonaws.com'
@@ -66,11 +68,12 @@ pipeline {
             when { expression { params.DEPLOY_TARGET == 'compose' } }
             steps {
                 echo 'Executing Ansible Playbook (docker compose deploy)...'
+                // Jenkins runs inside a container (not on the app server itself), so this must
+                // use a real SSH connection to the box, not --connection=local.
                 dir('ansible') {
                     withCredentials([file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE')]) {
                         sh '''
                             ansible-playbook deploy.yml \
-                                --connection=local \
                                 --limit aws-server-1 \
                                 --vault-password-file "$VAULT_PASS_FILE"
                         '''
@@ -82,11 +85,9 @@ pipeline {
         stage('6. Docker Compose Logs') {
             when { expression { params.DEPLOY_TARGET == 'compose' } }
             steps {
-                echo 'Archiving docker compose logs from the app server...'
+                echo 'Fetching docker compose logs from the app server over SSH...'
                 sh '''
-                    cd "$APP_DIR"
-                    docker compose ps
-                    cp compose.log "$WORKSPACE/compose.log" || docker compose logs --no-color --tail=300 > "$WORKSPACE/compose.log"
+                    ssh -o StrictHostKeyChecking=no ubuntu@"$APP_HOST" "cd $APP_DIR && docker compose ps && cat compose.log" > compose.log || true
                 '''
                 archiveArtifacts artifacts: 'compose.log', allowEmptyArchive: true, fingerprint: true
             }
@@ -113,7 +114,6 @@ pipeline {
                     withCredentials([file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE')]) {
                         sh '''
                             ansible-playbook k8s-deploy.yml \
-                                --connection=local \
                                 --limit aws-server-1 \
                                 --vault-password-file "$VAULT_PASS_FILE" \
                                 -e image_tag="$IMAGE_TAG"

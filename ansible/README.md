@@ -59,16 +59,16 @@ Jenkins agent, and deploys the containerized app — no manual SSH setup needed.
 `Jenkinsfile` (repo root) to call after the build/test stages pass:
 
 ```
-ansible-playbook deploy.yml --connection=local --limit aws-server-1 \
+ansible-playbook deploy.yml --limit aws-server-1 \
   --vault-password-file "$VAULT_PASS_FILE"
 ```
 
-Run from the `ansible/` directory. `--connection=local` requires the Jenkins
-job/pipeline to run directly on the EC2 box (the same all-in-one host acts as
-both the Jenkins agent and the app server) — e.g. `agent { label
-'aws-ec2-agent-1' }`, matching `jenkins_agent_name` in
-[group_vars/jenkins_agents.yml](group_vars/jenkins_agents.yml) (the name the
-box registers itself under in *Manage Jenkins > Nodes*).
+Run from the `ansible/` directory. Jenkins actually runs inside a
+`jenkins/jenkins:lts` container on the all-in-one box (not directly on its
+filesystem), so this connects over real SSH using `inventory/hosts.ini`'s
+`ansible_host`/`ansible_user` - do **not** pass `--connection=local`, since
+that would make Ansible operate on the container's own (unrelated, empty)
+filesystem instead of the actual app server.
 
 `deploy.yml` only runs the `app_deploy` role (git pull + `.env` template +
 `docker compose up -d --build`) — it assumes `site.yml` has already been run
