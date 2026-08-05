@@ -20,16 +20,21 @@
     owner: "{{ ansible_user }}"
     mode: '0600'
 
+# become: false below - the docker-compose CLI plugin is only registered for the
+# ansible_user (ubuntu, who is in the docker group), not for root, so these tasks
+# must run as the login user rather than root.
 - name: Build and start the application containers
   ansible.builtin.command: docker compose up -d --build --remove-orphans
   args:
     chdir: "{{ app_dir }}"
+  become: false
   register: compose_up
 
 - name: Show docker compose service status
   ansible.builtin.command: docker compose ps
   args:
     chdir: "{{ app_dir }}"
+  become: false
   register: compose_ps
   changed_when: false
 
@@ -58,6 +63,7 @@
   ansible.builtin.command: docker compose logs --no-color --tail=300
   args:
     chdir: "{{ app_dir }}"
+  become: false
   register: compose_logs
   changed_when: false
 
