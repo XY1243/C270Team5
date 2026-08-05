@@ -67,7 +67,6 @@ pipeline {
                     withCredentials([file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE')]) {
                         sh '''
                             ansible-playbook deploy.yml \
-                                --connection=local \
                                 --limit aws-server-1 \
                                 --vault-password-file "$VAULT_PASS_FILE"
                         '''
