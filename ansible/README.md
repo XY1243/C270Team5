@@ -83,3 +83,10 @@ Prerequisites for this stage to work:
    `ansible-vault-password` containing just the vault password used to
    encrypt `group_vars/app_servers/vault.yml`.
 
+The `app_deploy` role also waits for the app to answer HTTP requests after
+`docker compose up`, then prints and saves `docker compose logs` to
+`{{ app_dir }}/compose.log` on the box. The `Jenkinsfile`'s final stage copies
+that file into the Jenkins workspace and archives it as a build artifact, so
+the compose logs for every deploy are downloadable from the build page
+without needing to SSH in.
+
