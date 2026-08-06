@@ -33,6 +33,9 @@
 - name: Point kubectl at the EKS cluster
   ansible.builtin.command: >
     aws eks update-kubeconfig --region {{ aws_region }} --name {{ eks_cluster_name }}
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
   changed_when: true
 
 - name: Ensure the target namespace exists

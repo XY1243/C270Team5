@@ -11,10 +11,10 @@ pipeline {
     environment {
         APP_DIR = '/opt/wenroucopy' // must match ansible/group_vars/app_servers/vars.yml app_dir
         APP_HOST = '3.105.110.74' // must match ansible/inventory/hosts.ini ansible_host
-        // TODO: fill in your real AWS/ECR details (must match ansible/group_vars/k8s_deploy.yml)
-        AWS_REGION = 'CHANGE_ME'
-        ECR_REGISTRY = 'CHANGE_ME.dkr.ecr.CHANGE_ME.amazonaws.com'
+        AWS_REGION = 'ap-southeast-2'
+        ECR_REGISTRY = '397379265079.dkr.ecr.ap-southeast-2.amazonaws.com'
         ECR_REPOSITORY = 'event-finder-app'
+        AWS_CREDENTIALS_ID = 'aws-credentials' // Jenkins credential ID for AWS access keys
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
@@ -93,16 +93,39 @@ pipeline {
             }
         }
 
+        stage('6.5 Debug: Show Bound Credentials') {
+            when { expression { params.DEPLOY_TARGET == 'kubernetes' } }
+            steps {
+                echo 'Debugging credential binding for AWS...'
+                withCredentials([usernamePassword(credentialsId: env.AWS_CREDENTIALS_ID ?: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        echo "AWS_ACCESS_KEY_ID length: ${#AWS_ACCESS_KEY_ID}"
+                        echo "AWS_SECRET_ACCESS_KEY length: ${#AWS_SECRET_ACCESS_KEY}"
+                        env | sort | grep -i AWS || true
+                    '''
+                }
+            }
+        }
+
         stage('7. Push Image to ECR') {
             when { expression { params.DEPLOY_TARGET == 'kubernetes' } }
             steps {
                 echo 'Pushing image to ECR for the Kubernetes deployment...'
-                sh '''
-                    aws ecr get-login-password --region "$AWS_REGION" \
-                        | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-                    docker tag node-app:latest "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-                    docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-                '''
+                withCredentials([usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        # Run AWS CLI in a lightweight container to output the ECR password,
+                        # then pipe that into the host's `docker login` (docker client runs on agent).
+                        docker run --rm \
+                          -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION \
+                          amazon/aws-cli:2.36.17 \
+                          ecr get-login-password --region "$AWS_REGION" \
+                          | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+                        # Tag and push using the agent's Docker client
+                        docker tag node-app:latest "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+                        docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+                    '''
+                }
             }
         }
 
@@ -111,12 +134,17 @@ pipeline {
             steps {
                 echo 'Executing Ansible Playbook against the EKS cluster...'
                 dir('ansible') {
-                    withCredentials([file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE')]) {
+                    withCredentials([
+                        file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE'),
+                        usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
                         sh '''
                             ansible-playbook k8s-deploy.yml \
                                 --limit aws-server-1 \
                                 --vault-password-file "$VAULT_PASS_FILE" \
-                                -e image_tag="$IMAGE_TAG"
+                                -e image_tag="$IMAGE_TAG" \
+                                -e aws_access_key_id="$AWS_ACCESS_KEY_ID" \
+                                -e aws_secret_access_key="$AWS_SECRET_ACCESS_KEY"
                         '''
                     }
                 }
