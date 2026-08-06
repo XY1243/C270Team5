@@ -8,9 +8,8 @@ pipeline {
     environment {
         APP_DIR = '/opt/wenroucopy' // must match ansible/group_vars/app_servers/vars.yml app_dir
         APP_HOST = '3.105.110.74' // must match ansible/inventory/hosts.ini ansible_host
-        // TODO: fill in your real AWS/ECR details (must match ansible/group_vars/k8s_deploy.yml)
-        AWS_REGION = 'CHANGE_ME'
-        ECR_REGISTRY = 'CHANGE_ME.dkr.ecr.CHANGE_ME.amazonaws.com'
+        AWS_REGION = 'ap-southeast-2'
+        ECR_REGISTRY = '397379265079.dkr.ecr.ap-southeast-2.amazonaws.com'
         ECR_REPOSITORY = 'event-finder-app'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
