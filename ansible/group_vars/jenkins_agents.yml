@@ -1,6 +1,8 @@
 ---
 # URL of the Jenkins controller this agent connects back to (same box, all-in-one instance)
-jenkins_url: "http://13.211.77.16:8080"
+# NOTE: this instance has no Elastic IP, so its public IP changes on every stop/start -
+# update this (and app_servers/vars.yml google_redirect_uri) whenever that happens.
+jenkins_url: "http://3.105.110.74:8080"
 jenkins_agent_name: "aws-ec2-agent-1"
 
 # Get this value from the Jenkins controller: Manage Jenkins > Nodes > <agent> > secret

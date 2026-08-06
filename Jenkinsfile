@@ -1,4 +1,9 @@
 pipeline {
+    // All-in-one setup: Jenkins controller runs in Docker on the same EC2 box that hosts the
+    // app. Stages 5/6 use `ansible-playbook --connection=local`, which requires ansible-core
+    // installed inside the Jenkins container itself (done via `docker exec -u root jenkins
+    // apt-get install -y ansible-core git sshpass` - re-run this if the container is recreated).
+    // No separate Jenkins agent node is registered, so this stays on the built-in node.
     agent any
 
     parameters {

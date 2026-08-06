@@ -19,4 +19,4 @@ smtp_host: smtp.gmail.com
 smtp_port: 587
 smtp_secure: "false"
 mail_from: "EventFinder <noreply@eventfinder.local>"
-google_redirect_uri: "http://13.211.77.16:3000/api/auth/google-calendar/callback"
+google_redirect_uri: "http://3.105.110.74:3000/api/auth/google-calendar/callback"

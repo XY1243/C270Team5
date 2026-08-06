@@ -1,0 +1,11 @@
+---
+# Copy this file to vault.yml and encrypt it before use:
+#   cp group_vars/app_servers/vault.yml.example group_vars/app_servers/vault.yml
+#   ansible-vault encrypt group_vars/app_servers/vault.yml
+# Never commit an unencrypted vault.yml with real secrets.
+db_password: "CHANGE_ME"
+jwt_secret: "CHANGE_ME"
+google_client_id: "CHANGE_ME"
+google_client_secret: "CHANGE_ME"
+smtp_user: "CHANGE_ME"
+smtp_pass: "CHANGE_ME"
