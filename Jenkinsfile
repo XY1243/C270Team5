@@ -110,21 +110,14 @@ pipeline {
                 echo 'Pushing image to ECR for the Kubernetes deployment...'
                 withCredentials([usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     sh '''
-                        if ! command -v aws >/dev/null 2>&1; then
-                            echo "ERROR: AWS CLI is not installed in the Jenkins build environment."
-                            if command -v python3 >/dev/null 2>&1; then
-                                echo "Attempting to install awscli using pip..."
-                                python3 -m pip install --user awscli
-                                export PATH="$HOME/.local/bin:$PATH"
-                            fi
-                        fi
-                        if ! command -v aws >/dev/null 2>&1; then
-                            echo "ERROR: AWS CLI still unavailable. Install awscli on the Jenkins agent or use a build image that includes it."
-                            exit 1
-                        fi
-                        aws --version
-                        aws ecr get-login-password --region "$AWS_REGION" \
-                            | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+                        # Use an AWS CLI container to perform ECR login so the agent doesn't need aws installed.
+                        docker run --rm \
+                          -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION \
+                          -v /var/run/docker.sock:/var/run/docker.sock \
+                          amazon/aws-cli:2.36.17 \
+                          sh -c "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY"
+
+                        # Tag and push using the agent's Docker client (docker socket was mounted into the container above)
                         docker tag node-app:latest "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
                         docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
                     '''
