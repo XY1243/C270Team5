@@ -94,6 +94,19 @@ pipeline {
             steps {
                 echo 'Pushing image to ECR for the Kubernetes deployment...'
                 sh '''
+                    if ! command -v aws >/dev/null 2>&1; then
+                        echo "ERROR: AWS CLI is not installed in the Jenkins build environment."
+                        if command -v python3 >/dev/null 2>&1; then
+                            echo "Attempting to install awscli using pip..."
+                            python3 -m pip install --user awscli
+                            export PATH="$HOME/.local/bin:$PATH"
+                        fi
+                    fi
+                    if ! command -v aws >/dev/null 2>&1; then
+                        echo "ERROR: AWS CLI still unavailable. Install awscli on the Jenkins agent or use a build image that includes it."
+                        exit 1
+                    fi
+                    aws --version
                     aws ecr get-login-password --region "$AWS_REGION" \
                         | docker login --username AWS --password-stdin "$ECR_REGISTRY"
                     docker tag node-app:latest "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
