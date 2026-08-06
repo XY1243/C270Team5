@@ -1,4 +1,7 @@
 pipeline {
+    // Jenkins only has the Built-In Node registered, which runs inside the
+    // jenkins/jenkins:lts container (not on the app server's own filesystem) -
+    // the Ansible deploy stages below connect to the app server over real SSH.
     agent any
 
     parameters {
