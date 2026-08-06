@@ -110,14 +110,15 @@ pipeline {
                 echo 'Pushing image to ECR for the Kubernetes deployment...'
                 withCredentials([usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     sh '''
-                        # Use an AWS CLI container to perform ECR login so the agent doesn't need aws installed.
+                        # Run AWS CLI in a lightweight container to output the ECR password,
+                        # then pipe that into the host's `docker login` (docker client runs on agent).
                         docker run --rm \
                           -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION \
-                          -v /var/run/docker.sock:/var/run/docker.sock \
                           amazon/aws-cli:2.36.17 \
-                          sh -c "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY"
+                          aws ecr get-login-password --region "$AWS_REGION" \
+                          | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 
-                        # Tag and push using the agent's Docker client (docker socket was mounted into the container above)
+                        # Tag and push using the agent's Docker client
                         docker tag node-app:latest "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
                         docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
                     '''
