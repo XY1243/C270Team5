@@ -11,6 +11,7 @@ pipeline {
         AWS_REGION = 'ap-southeast-2'
         ECR_REGISTRY = '397379265079.dkr.ecr.ap-southeast-2.amazonaws.com'
         ECR_REPOSITORY = 'event-finder-app'
+        AWS_CREDENTIALS_ID = 'aws-credentials' // Jenkins credential ID for AWS access keys
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
@@ -93,25 +94,27 @@ pipeline {
             when { expression { params.DEPLOY_TARGET == 'kubernetes' } }
             steps {
                 echo 'Pushing image to ECR for the Kubernetes deployment...'
-                sh '''
-                    if ! command -v aws >/dev/null 2>&1; then
-                        echo "ERROR: AWS CLI is not installed in the Jenkins build environment."
-                        if command -v python3 >/dev/null 2>&1; then
-                            echo "Attempting to install awscli using pip..."
-                            python3 -m pip install --user awscli
-                            export PATH="$HOME/.local/bin:$PATH"
+                withCredentials([usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        if ! command -v aws >/dev/null 2>&1; then
+                            echo "ERROR: AWS CLI is not installed in the Jenkins build environment."
+                            if command -v python3 >/dev/null 2>&1; then
+                                echo "Attempting to install awscli using pip..."
+                                python3 -m pip install --user awscli
+                                export PATH="$HOME/.local/bin:$PATH"
+                            fi
                         fi
-                    fi
-                    if ! command -v aws >/dev/null 2>&1; then
-                        echo "ERROR: AWS CLI still unavailable. Install awscli on the Jenkins agent or use a build image that includes it."
-                        exit 1
-                    fi
-                    aws --version
-                    aws ecr get-login-password --region "$AWS_REGION" \
-                        | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-                    docker tag node-app:latest "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-                    docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-                '''
+                        if ! command -v aws >/dev/null 2>&1; then
+                            echo "ERROR: AWS CLI still unavailable. Install awscli on the Jenkins agent or use a build image that includes it."
+                            exit 1
+                        fi
+                        aws --version
+                        aws ecr get-login-password --region "$AWS_REGION" \
+                            | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+                        docker tag node-app:latest "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+                        docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+                    '''
+                }
             }
         }
 
@@ -120,7 +123,10 @@ pipeline {
             steps {
                 echo 'Executing Ansible Playbook against the EKS cluster...'
                 dir('ansible') {
-                    withCredentials([file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE')]) {
+                    withCredentials([
+                        file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE'),
+                        usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
                         sh '''
                             ansible-playbook k8s-deploy.yml \
                                 --limit aws-server-1 \
