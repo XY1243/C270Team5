@@ -130,3 +130,15 @@ Setup:
 The Jenkinsfile's `DEPLOY_TARGET` parameter picks between the docker-compose
 path (`deploy.yml`) and this Kubernetes path (`k8s-deploy.yml`) per build.
 
+If you do not yet have a cluster, you can create one in `ap-southeast-2` with:
+
+```bash
+./scripts/create-eks-cluster.sh my-eks-cluster
+```
+
+Then update `ansible/group_vars/k8s_deploy.yml` with:
+
+```yaml
+aws_region: "ap-southeast-2"
+eks_cluster_name: "my-eks-cluster"
+```
