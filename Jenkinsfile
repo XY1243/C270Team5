@@ -139,7 +139,9 @@ pipeline {
                             ansible-playbook k8s-deploy.yml \
                                 --limit aws-server-1 \
                                 --vault-password-file "$VAULT_PASS_FILE" \
-                                -e image_tag="$IMAGE_TAG"
+                                -e image_tag="$IMAGE_TAG" \
+                                -e aws_access_key_id="$AWS_ACCESS_KEY_ID" \
+                                -e aws_secret_access_key="$AWS_SECRET_ACCESS_KEY"
                         '''
                     }
                 }
