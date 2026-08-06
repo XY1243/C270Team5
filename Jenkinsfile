@@ -90,6 +90,20 @@ pipeline {
             }
         }
 
+        stage('6.5 Debug: Show Bound Credentials') {
+            when { expression { params.DEPLOY_TARGET == 'kubernetes' } }
+            steps {
+                echo 'Debugging credential binding for AWS...'
+                withCredentials([usernamePassword(credentialsId: env.AWS_CREDENTIALS_ID ?: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        echo "AWS_ACCESS_KEY_ID length: ${#AWS_ACCESS_KEY_ID}"
+                        echo "AWS_SECRET_ACCESS_KEY length: ${#AWS_SECRET_ACCESS_KEY}"
+                        env | sort | grep -i AWS || true
+                    '''
+                }
+            }
+        }
+
         stage('7. Push Image to ECR') {
             when { expression { params.DEPLOY_TARGET == 'kubernetes' } }
             steps {
