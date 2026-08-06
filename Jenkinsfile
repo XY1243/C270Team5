@@ -1,9 +1,4 @@
 pipeline {
-    // All-in-one setup: Jenkins controller runs in Docker on the same EC2 box that hosts the
-    // app. Stages 5/6 use `ansible-playbook --connection=local`, which requires ansible-core
-    // installed inside the Jenkins container itself (done via `docker exec -u root jenkins
-    // apt-get install -y ansible-core git sshpass` - re-run this if the container is recreated).
-    // No separate Jenkins agent node is registered, so this stays on the built-in node.
     agent any
 
     parameters {
@@ -11,6 +6,8 @@ pipeline {
     }
 
     environment {
+        APP_DIR = '/opt/wenroucopy' // must match ansible/group_vars/app_servers/vars.yml app_dir
+        APP_HOST = '3.105.110.74' // must match ansible/inventory/hosts.ini ansible_host
         // TODO: fill in your real AWS/ECR details (must match ansible/group_vars/k8s_deploy.yml)
         AWS_REGION = 'CHANGE_ME'
         ECR_REGISTRY = 'CHANGE_ME.dkr.ecr.CHANGE_ME.amazonaws.com'
@@ -67,12 +64,13 @@ pipeline {
         stage('5. Ansible Deployment (Docker Compose)') {
             when { expression { params.DEPLOY_TARGET == 'compose' } }
             steps {
-                echo 'Executing Ansible Playbook...'
+                echo 'Executing Ansible Playbook (docker compose deploy)...'
+                // Jenkins runs inside a container (not on the app server itself), so this must
+                // use a real SSH connection to the box, not --connection=local.
                 dir('ansible') {
                     withCredentials([file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE')]) {
                         sh '''
                             ansible-playbook deploy.yml \
-                                --connection=local \
                                 --limit aws-server-1 \
                                 --vault-password-file "$VAULT_PASS_FILE"
                         '''
@@ -81,7 +79,18 @@ pipeline {
             }
         }
 
-        stage('5. Push Image to ECR') {
+        stage('6. Docker Compose Logs') {
+            when { expression { params.DEPLOY_TARGET == 'compose' } }
+            steps {
+                echo 'Fetching docker compose logs from the app server over SSH...'
+                sh '''
+                    ssh -o StrictHostKeyChecking=no ubuntu@"$APP_HOST" "cd $APP_DIR && docker compose ps && cat compose.log" > compose.log || true
+                '''
+                archiveArtifacts artifacts: 'compose.log', allowEmptyArchive: true, fingerprint: true
+            }
+        }
+
+        stage('7. Push Image to ECR') {
             when { expression { params.DEPLOY_TARGET == 'kubernetes' } }
             steps {
                 echo 'Pushing image to ECR for the Kubernetes deployment...'
@@ -94,7 +103,7 @@ pipeline {
             }
         }
 
-        stage('6. Ansible Deployment (Kubernetes)') {
+        stage('8. Ansible Deployment (Kubernetes)') {
             when { expression { params.DEPLOY_TARGET == 'kubernetes' } }
             steps {
                 echo 'Executing Ansible Playbook against the EKS cluster...'
@@ -102,7 +111,6 @@ pipeline {
                     withCredentials([file(credentialsId: 'ansible-vault-password', variable: 'VAULT_PASS_FILE')]) {
                         sh '''
                             ansible-playbook k8s-deploy.yml \
-                                --connection=local \
                                 --limit aws-server-1 \
                                 --vault-password-file "$VAULT_PASS_FILE" \
                                 -e image_tag="$IMAGE_TAG"

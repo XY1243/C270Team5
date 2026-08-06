@@ -1,7 +1,8 @@
 ---
 # CI/CD deploy-only playbook, run by Jenkins (Jenkinsfile stage 5) after tests pass.
 # Assumes site.yml has already provisioned the box once (Docker, firewall, jenkins agent).
-# Jenkins runs this with --connection=local since the agent IS the app server.
+# Jenkins runs inside a container on the box (not directly on its filesystem), so this
+# connects over real SSH using inventory/hosts.ini - do NOT use --connection=local here.
 - name: Deploy application to the app server
   hosts: app_servers
   become: true

@@ -20,7 +20,59 @@
     owner: "{{ ansible_user }}"
     mode: '0600'
 
+# become: false below - the docker-compose CLI plugin is only registered for the
+# ansible_user (ubuntu, who is in the docker group), not for root, so these tasks
+# must run as the login user rather than root.
 - name: Build and start the application containers
-  ansible.builtin.command: docker compose up -d --build
+  ansible.builtin.command: docker compose up -d --build --remove-orphans
   args:
     chdir: "{{ app_dir }}"
+  become: false
+  register: compose_up
+
+- name: Show docker compose service status
+  ansible.builtin.command: docker compose ps
+  args:
+    chdir: "{{ app_dir }}"
+  become: false
+  register: compose_ps
+  changed_when: false
+
+- name: Print docker compose service status
+  ansible.builtin.debug:
+    var: compose_ps.stdout_lines
+
+- name: Wait for the app to accept HTTP connections
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}/"
+    status_code: [200, 301, 302, 401, 403]
+  register: app_health
+  until: app_health.status is defined
+  retries: 15
+  delay: 4
+  ignore_errors: true
+
+- name: Warn if the app did not respond after startup
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: app did not respond on port {{ app_port }} after startup -
+      check the docker compose logs below.
+  when: app_health.status is not defined
+
+- name: Capture docker compose logs for troubleshooting
+  ansible.builtin.command: docker compose logs --no-color --tail=300
+  args:
+    chdir: "{{ app_dir }}"
+  become: false
+  register: compose_logs
+  changed_when: false
+
+- name: Print docker compose logs (visible in the Jenkins console output)
+  ansible.builtin.debug:
+    var: compose_logs.stdout_lines
+
+- name: Save docker compose logs to a file on the app server
+  ansible.builtin.copy:
+    content: "{{ compose_logs.stdout }}"
+    dest: "{{ app_dir }}/compose.log"
+    mode: '0644'
