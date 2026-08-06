@@ -115,7 +115,7 @@ pipeline {
                         docker run --rm \
                           -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION \
                           amazon/aws-cli:2.36.17 \
-                          aws ecr get-login-password --region "$AWS_REGION" \
+                          ecr get-login-password --region "$AWS_REGION" \
                           | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 
                         # Tag and push using the agent's Docker client
